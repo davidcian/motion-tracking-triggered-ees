@@ -43,10 +43,13 @@ config_1.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30) #useful?
 
 
+
 #colorVideoCam1 = cv2.VideoWriter(save_dir+ filename[:-4]+'.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, (640, 480))
 
-# Start streaming from both cameras
-pipeline_1.start(config_1)
+# Start streaming from camera
+profile = pipeline_1.start(config_1)
+depth_sensor = profile.get_device().first_depth_sensor()
+depth_scale = depth_sensor.get_depth_scale()
 
 frame_id = 0
 
@@ -67,6 +70,8 @@ with mp_pose.Pose(static_image_mode=False,
             continue
         depth_image_1 = np.asanyarray(depth_frame_1.get_data())
         color_image_1 = np.asanyarray(color_frame_1.get_data())
+
+
 
         depth_colormap_1 = cv2.applyColorMap(cv2.convertScaleAbs(depth_image_1, alpha=0.05), cv2.COLORMAP_JET)
 
@@ -91,7 +96,7 @@ with mp_pose.Pose(static_image_mode=False,
             coord = results.pose_landmarks.landmark[landmark]
             x = min(int(coord.x * image_width), 640-1)
             y = min(int(coord.y * image_height), 480-1)
-            depth_z = depth_image_1[y,x]
+            depth_z = depth_scale * depth_image_1[y,x]
             # if depth_z == 0:
             #     print(depth_image_1.shape)
             #     print(depth_image_1)
@@ -115,7 +120,7 @@ with mp_pose.Pose(static_image_mode=False,
         coord = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
         x = min(int(coord.x * image_width), 640-1)
         y = x = min(int(coord.y * image_height), 480-1)
-        depth_z = depth_image_1[y,x]
+        depth_z = depth_scale * depth_image_1[y,x]
 
         cv2.putText(image,'x'+str(x)+'y'+str(y)+'depth'+str(depth_z),
             bottomLeftCornerOfText,
