@@ -5,7 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyrealsense2 as rs
 
-from help_viz import plot_landmarks
+import argparse
+
+import os
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -27,18 +29,21 @@ lineType               = 2
 
 ########################################################################################################################
 
-load_dir = "C:\\Users\\cleme\\Documents\\EPFL\\Master\\MA-3\\sensor\\data\\"
-file_name = 'cam1_911222060374_record_30_09_2021_1404_05'
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--dir", default="C:\\Users\\cleme\\Documents\\EPFL\\Master\\MA-3\\sensor\\data\\")
+parser.add_argument("-f", "--file", default='cam1_911222060374_record_30_09_2021_1404_05.avi')
+parser.add_argument("-z", "--depth-file")
+args = parser.parse_args()
 
 ########################################################################################################################
 
-container = av.open(str(load_dir)+str(file_name)+".avi")
+container = av.open(os.path.join(args.dir, args.file))
 
 # Configure depth and color streams...
 # ...from Camera 1
 pipeline_1 = rs.pipeline()
 config_1 = rs.config()
-rs.config.enable_device_from_file(config_1, load_dir + file_name +".bag")
+rs.config.enable_device_from_file(config_1, os.path.join(args.dir, args.depth_file))
 config_1.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30) #useful?
 
