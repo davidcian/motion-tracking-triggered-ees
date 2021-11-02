@@ -33,10 +33,6 @@ with mp_pose.Pose(
     # Flip the image horizontally for a selfie-view display.
     cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
 
-    # Plot pose world landmarks.
-    mp_drawing.plot_landmarks(
-        results.pose_world_landmarks, mp_pose.POSE_CONNECTIONS)
-
     if cv2.waitKey(5) & 0xFF == 27:
       break
 

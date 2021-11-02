@@ -5,8 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyrealsense2 as rs
 
-from help_viz import plot_landmarks
-
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
