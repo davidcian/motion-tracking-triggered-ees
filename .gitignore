@@ -133,3 +133,6 @@ dmypy.json
 .idea/modules.xml
 
 .idea/motion-tracking-triggered-ees.iml
+
+# Recording files
+*.csv
