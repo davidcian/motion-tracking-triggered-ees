@@ -60,12 +60,13 @@ depth_scale = depth_sensor.get_depth_scale()
 
 frame_id = 0
 
-
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as pose:
-  #for frame in container.decode(video=0):
+
+    raw_z_values = []
+
     try:
       while True:
 
@@ -129,6 +130,12 @@ with mp_pose.Pose(static_image_mode=False,
         y = x = min(int(coord.y * image_height), 480-1)
         depth_z = depth_scale * depth_image_1[y,x]
 
+        # Record the raw depth values
+        raw_z_values.append(depth_z)
+
+        median_filter_window = raw_z_values[max(0, len(raw_z_values) - 3):len(raw_z_values)]
+        # Apply a median filter to the depth value
+        filtered_z = median_filter_window[len(median_filter_window) // 2]
 
        # Calculating the fps
       
