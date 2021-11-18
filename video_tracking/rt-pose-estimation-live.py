@@ -1,7 +1,6 @@
 import cv2
 import time
 import mediapipe as mp
-import av
 import numpy as np
 import matplotlib.pyplot as plt
 import pyrealsense2 as rs
@@ -151,7 +150,7 @@ with mp_pose.Pose(static_image_mode=False,
         fps = int(fps)
  
         # putting the FPS as well as x, y and depth coordinates count on the frame
-        cv2.putText(image,'x'+str(x)+'y'+str(y)+'depth'+str(depth_z)+'FPS'+str(fps),
+        cv2.putText(image,'x '+str(x)+'y'+str(y)+'depth {depth_z:.2f}'+'FPS'+str(fps),
             bottomLeftCornerOfText,
             font,
             fontScale,
