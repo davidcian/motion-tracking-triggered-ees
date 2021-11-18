@@ -136,3 +136,7 @@ dmypy.json
 
 # Recording files
 *.csv
+
+# Non-important files
+.DS_Store
+.idea/*
