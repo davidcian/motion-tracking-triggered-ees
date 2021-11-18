@@ -1,4 +1,5 @@
 import cv2
+import time
 import mediapipe as mp
 import av
 import numpy as np
@@ -21,7 +22,11 @@ fontScale              = 1
 fontColor              = (255,255,255)
 lineType               = 2
 
-
+# used to record the time when we processed last frame
+prev_frame_time = 0
+ 
+# used to record the time at which we processed current frame
+new_frame_time = 0
 
 ########################################################################################################################
 
@@ -124,7 +129,22 @@ with mp_pose.Pose(static_image_mode=False,
         y = x = min(int(coord.y * image_height), 480-1)
         depth_z = depth_scale * depth_image_1[y,x]
 
-        cv2.putText(image,'x'+str(x)+'y'+str(y)+'depth'+str(depth_z),
+
+       # Calculating the fps
+      
+       # time when we finish processing for this frame
+        new_frame_time = time.time()
+       # fps will be number of frame processed in given time frame
+       # since their will be most of time error of 0.001 second
+        # we will be subtracting it to get more accurate result
+        fps = 1/(new_frame_time-prev_frame_time)
+        prev_frame_time = new_frame_time
+ 
+        # converting the fps into integer
+        fps = int(fps)
+ 
+        # putting the FPS as well as x, y and depth coordinates count on the frame
+        cv2.putText(image,'x'+str(x)+'y'+str(y)+'depth'+str(depth_z)+'FPS'+str(fps),
             bottomLeftCornerOfText,
             font,
             fontScale,
