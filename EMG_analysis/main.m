@@ -51,6 +51,36 @@ end
 %     configs_EMG(1).Time{1,1})
 
 
+%% Apply preprocessing to the whole dataset
+
+% Butterworth parameters
+fc = 20;
+order = 4;
+
+for i=1:nb_EMG
+    % 300ms window for moving rms
+    win = round(300e-3 * baseline_EMG.Fs(i));
+    % Set butterworth
+    Wn = fc / (baseline_EMG.Fs(i)/2);
+    [b, a] = butter(order, Wn);
+
+    % Baseline
+    baseline_EMG.Data{1,i} = fastrms(baseline_EMG.Data{1,i}, win);
+    baseline_EMG.Data{1,i} = filter(b, a, baseline_EMG.Data{1,i});
+
+    % MVC
+    MVC_EMG.Data{1,i} = fastrms(MVC_EMG.Data{1,i}, win);
+    MVC_EMG.Data{1,i} = filter(b, a, MVC_EMG.Data{1,i});
+
+    % Configs
+    for j=1:length(configs_EMG)
+        configs_EMG(j).Data{1,i} = fastrms(configs_EMG(j).Data{1,i}, win);
+        configs_EMG(j).Data{1,i} = filter(b, a, configs_EMG(j).Data{1,i});
+    end
+end
+
+plot(baseline_EMG.Time{1,1}, baseline_EMG.Data{1,1})
+
 %% Baseline computation and correction
 
 % Plot baseline for each EMG channel (i.e. each muscle)
@@ -96,10 +126,12 @@ plot(configs_EMG(1).Time{1,1}, emg_rms)
 % envelope(abs(configs_EMG(1).Data{1,1}),666,'rms') ?
 
 % Plan : 
-% - remove baseline, smooth data
+% - apply same preprocessing to each recording
+% - compute baseline
+% - remove baseline 
 % - compute MVC (mean amplitude of the highest signal portion with
 % e.g. 500 ms duration)
-% - scale (smoothed) data from configs by VMC
+% - scale data from configs by VMC
 % - create epochs using the trigger channel
 % - quantify the amplitude of the signal of each contraction and build
 % stats for each configuration
