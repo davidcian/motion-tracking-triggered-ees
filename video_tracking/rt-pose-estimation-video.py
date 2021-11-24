@@ -124,7 +124,7 @@ with mp_pose.Pose(static_image_mode=False,
         #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
         coord = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
         x = min(int(coord.x * image_width), 640-1)
-        y = x = min(int(coord.y * image_height), 480-1)
+        y = min(int(coord.y * image_height), 480-1)
         depth_z = depth_scale * depth_image_1[y,x]
 
         cv2.putText(image,'x'+str(x)+'y'+str(y)+'depth'+str(depth_z),
