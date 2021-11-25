@@ -56,13 +56,14 @@ profile = pipeline_1.start(config_1)
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 
+depth_values = []
+
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as pose:
 
     current_frame = 1
-    #plt.axis([0, 10, 0, 10])
 
     try:
       while True:
@@ -74,8 +75,6 @@ with mp_pose.Pose(static_image_mode=False,
             continue
         depth_image_1 = np.asanyarray(depth_frame_1.get_data())
         color_image_1 = np.asanyarray(color_frame_1.get_data())
-
-
 
         depth_colormap_1 = cv2.applyColorMap(cv2.convertScaleAbs(depth_image_1, alpha=0.05), cv2.COLORMAP_JET)
 
@@ -135,7 +134,20 @@ with mp_pose.Pose(static_image_mode=False,
         cv2.imshow('RealSense', depth_colormap_1)
         cv2.imshow('MediaPipe Pose', image)
 
-        plt.scatter(current_frame, depth_z)
+        max_z_deviation = 0.2
+
+        if current_frame > 1:
+          if depth_z > depth_values[-1] + max_z_deviation or depth_z < depth_values[-1] - max_z_deviation:
+            filtered_z = depth_values[-1]
+          else:
+            filtered_z = depth_z
+        else:
+          filtered_z = depth_z 
+
+        depth_values.append(filtered_z)
+
+        plt.scatter(current_frame, depth_z, c='b')
+        plt.scatter(current_frame, filtered_z, c='r')
         plt.pause(0.05)
         current_frame += 1
         
