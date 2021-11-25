@@ -51,22 +51,43 @@ config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30) #useful?
 
 #colorVideoCam1 = cv2.VideoWriter(save_dir+ filename[:-4]+'.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, (640, 480))
 
+def filter_z(depth_values, current_z):
+  max_z_deviation = 0.2
+  if current_z > depth_values[-1] + max_z_deviation or current_z < depth_values[-1] - max_z_deviation:
+    filtered_z = depth_values[-1]
+  else:
+    filtered_z = current_z
+
+  return filtered_z
+
 # Start streaming from camera
 profile = pipeline_1.start(config_1)
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 
-frame_id = 0
+depth_values = []
 
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.set_title("Skeleton of patient")
+
+# Bones:
+# left_shoulder - right_shoulder
+bone_list = [[mp_pose.PoseLandmark.LEFT_WRIST, mp_pose.PoseLandmark.LEFT_ELBOW], [mp_pose.PoseLandmark.LEFT_ELBOW, mp_pose.PoseLandmark.LEFT_SHOULDER],
+  [mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.RIGHT_SHOULDER], [mp_pose.PoseLandmark.RIGHT_WRIST, mp_pose.PoseLandmark.RIGHT_ELBOW],
+  [mp_pose.PoseLandmark.RIGHT_ELBOW, mp_pose.PoseLandmark.RIGHT_SHOULDER]]
+
+joint_positions = {}
 
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as pose:
-  #for frame in container.decode(video=0):
+
+    current_frame = 1
+
     try:
       while True:
-
         # to be check: right x,y and z
         frames_1 = pipeline_1.wait_for_frames()
         depth_frame_1 = frames_1.get_depth_frame()
@@ -75,8 +96,6 @@ with mp_pose.Pose(static_image_mode=False,
             continue
         depth_image_1 = np.asanyarray(depth_frame_1.get_data())
         color_image_1 = np.asanyarray(color_frame_1.get_data())
-
-
 
         depth_colormap_1 = cv2.applyColorMap(cv2.convertScaleAbs(depth_image_1, alpha=0.05), cv2.COLORMAP_JET)
 
@@ -97,22 +116,15 @@ with mp_pose.Pose(static_image_mode=False,
 
         if not results.pose_landmarks:
           continue
+
         for landmark in landmarks_list:
             coord = results.pose_landmarks.landmark[landmark]
             x = min(int(coord.x * image_width), 640-1)
             y = min(int(coord.y * image_height), 480-1)
             depth_z = depth_scale * depth_image_1[y,x]
-            # if depth_z == 0:
-            #     print(depth_image_1.shape)
-            #     print(depth_image_1)
-            landmarks_coord.append([frame_id,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
-        #print(color_image_1)
+            landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
 
-        # print(
-        #     f'Left wrist coordinates: ('
-        #     f'{results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].x * image_width}, '
-        #     f'{results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y * image_height})'
-        # )
+            joint_positions[landmark] = [x, y, depth_z]
 
         mp_drawing.draw_landmarks(
             image,
@@ -135,11 +147,38 @@ with mp_pose.Pose(static_image_mode=False,
             lineType)
         cv2.imshow('RealSense', depth_colormap_1)
         cv2.imshow('MediaPipe Pose', image)
-        #plot_landmarks(
-        #    results.pose_world_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        if current_frame > 1:
+          filtered_z = filter_z(depth_values, depth_z)
+        else:
+          filtered_z = depth_z 
+
+        depth_values.append(filtered_z)
+
+        # Draw the depth value over time
+        #plt.title("Depth over time")
+        #plt.scatter(current_frame, depth_z, c='b')
+        #plt.scatter(current_frame, filtered_z, c='r')
+
+        # Draw the skeleton over time
+        ax.cla()
+        #ax.scatter(x, y, filtered_z, c='r')
+        for joint_name, joint_position in joint_positions.items():
+          x, y, z = joint_position
+          ax.scatter(x, y, z, c='r')
+
+        for bone in bone_list:
+          x1, y1, z1 = joint_positions[bone[0]]
+          x2, y2, z2 = joint_positions[bone[1]]
+          ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
+
+        plt.pause(0.05)
+        current_frame += 1
+        
         if cv2.waitKey(5) & 0xFF == 27:
           break
-        frame_id = frame_id + 1
+
+      ax.show()
 
     # to do: stop process at the end of video
     finally:
