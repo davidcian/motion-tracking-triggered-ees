@@ -69,6 +69,7 @@ depth_values = []
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
+ax.set_title("Skeleton of patient")
 
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
@@ -159,8 +160,13 @@ with mp_pose.Pose(static_image_mode=False,
         #plt.scatter(current_frame, filtered_z, c='r')
 
         # Draw the skeleton over time
-        ax.set_title("Skeleton of patient")
-        ax.scatter(x, y, filtered_z)
+        ax.cla()
+        #ax.scatter(x, y, filtered_z, c='r')
+        for pose_landmark in results.pose_landmarks.landmark:
+          x = min(int(pose_landmark.x * image_width), 640-1)
+          y = min(int(pose_landmark.y * image_height), 480-1)
+          z = depth_scale * depth_image_1[y,x]   
+          ax.scatter(x, y, z, c='r')
 
         plt.pause(0.05)
         current_frame += 1
