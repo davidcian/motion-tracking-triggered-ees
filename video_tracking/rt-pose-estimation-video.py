@@ -167,8 +167,10 @@ with mp_pose.Pose(static_image_mode=False,
           x, y, z = joint_position
           ax.scatter(x, y, z, c='r')
 
-        #for bone in bone_list:
-          #ax.plot(x_bone1, y_bone1, x_bone2, y_bone2, c='b')
+        for bone in bone_list:
+          x1, y1, z1 = joint_positions[bone[0]]
+          x2, y2, z2 = joint_positions[bone[1]]
+          ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
 
         plt.pause(0.05)
         current_frame += 1
