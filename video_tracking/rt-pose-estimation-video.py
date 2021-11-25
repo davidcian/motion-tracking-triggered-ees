@@ -67,9 +67,9 @@ depth_scale = depth_sensor.get_depth_scale()
 
 depth_values = []
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.set_title("Skeleton of patient")
+#fig = plt.figure()
+#ax = fig.add_subplot(projection='3d')
+#ax.set_title("Skeleton of patient")
 
 # Bones:
 # left_shoulder - right_shoulder
@@ -156,21 +156,21 @@ with mp_pose.Pose(static_image_mode=False,
         depth_values.append(filtered_z)
 
         # Draw the depth value over time
-        #plt.title("Depth over time")
-        #plt.scatter(current_frame, depth_z, c='b')
-        #plt.scatter(current_frame, filtered_z, c='r')
+        plt.title("Depth over time")
+        plt.scatter(current_frame, depth_z, c='b')
+        plt.scatter(current_frame, filtered_z, c='r')
 
         # Draw the skeleton over time
-        ax.cla()
+        #ax.cla()
         #ax.scatter(x, y, filtered_z, c='r')
-        for joint_name, joint_position in joint_positions.items():
-          x, y, z = joint_position
-          ax.scatter(x, y, z, c='r')
+        #for joint_name, joint_position in joint_positions.items():
+          #x, y, z = joint_position
+          #ax.scatter(x, y, z, c='r')
 
-        for bone in bone_list:
-          x1, y1, z1 = joint_positions[bone[0]]
-          x2, y2, z2 = joint_positions[bone[1]]
-          ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
+        #for bone in bone_list:
+          #x1, y1, z1 = joint_positions[bone[0]]
+          #x2, y2, z2 = joint_positions[bone[1]]
+          #ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
 
         plt.pause(0.05)
         current_frame += 1
@@ -178,7 +178,8 @@ with mp_pose.Pose(static_image_mode=False,
         if cv2.waitKey(5) & 0xFF == 27:
           break
 
-      ax.show()
+      #ax.show()
+      plt.show()
 
     # to do: stop process at the end of video
     finally:
