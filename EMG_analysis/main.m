@@ -79,7 +79,7 @@ for i=1:nb_EMG
     end
 end
 
-plot(baseline_EMG.Time{1,1}, baseline_EMG.Data{1,1})
+% plot(baseline_EMG.Time{1,1}, baseline_EMG.Data{1,1})
 
 %% Baseline computation and correction
 
@@ -91,37 +91,89 @@ plot(baseline_EMG.Time{1,1}, baseline_EMG.Data{1,1})
 
 % Collect baseline for each EMG and correction
 muscle_baseline = zeros(1, length(baseline_EMG.Data));
+muscle_MVC = zeros(1, length(baseline_EMG.Data));
 for i=1:nb_EMG
     % Baseline computation
-    muscle_baseline(i) = mean(baseline_EMG.Data{1,i});
+    muscle_baseline(i) = max(baseline_EMG.Data{1,i});
     % MVC correction
     MVC_EMG.Data{1,i} = MVC_EMG.Data{1,i} - muscle_baseline(i);
+    % MVC computation
+    muscle_MVC(i) = max(MVC_EMG.Data{1,i});
+
     % Configs correction
     for j=1:length(configs_EMG)
-        configs_EMG(j).Data{1,i} = configs_EMG(j).Data{1,i} ...
-            - muscle_baseline(i);
+        configs_EMG(j).Data{1,i} = (configs_EMG(j).Data{1,i} ...
+            - muscle_baseline(i)) / muscle_MVC(i);
     end
 end
 
+%% Visualization
 
-%% VMC computation
-% Plot MVC for each EMG channel (i.e. each muscle)
+% Plot baseline for each EMG channel (i.e. each muscle)
+figure(1)
 for i=1:nb_EMG
-    subplot(8, 1, i)
+    subplot(nb_EMG, 1, i)
+    plot(baseline_EMG.Time{1,i}, baseline_EMG.Data{1,i})
+end
+
+% Plot MVC for each EMG channel (i.e. each muscle)
+figure(2)
+for i=1:nb_EMG
+    subplot(nb_EMG, 1, i)
     plot(MVC_EMG.Time{1,i}, MVC_EMG.Data{1,i})
 end
 
-movAvg = dsp.MovingAverage(666);
-movRMS = dsp.MovingRMS(666);
-emg_avg = movAvg(abs(configs_EMG(1).Data{1,1}));
-emg_rms = movRMS(abs(configs_EMG(1).Data{1,1}));
-figure(1); plot(configs_EMG(1).Time{1,1}, abs(configs_EMG(1).Data{1,1}))
-figure(2); plot(configs_EMG(1).Time{1,1}, emg_avg)
-figure(3); plot(configs_EMG(1).Time{1,1}, emg_rms)
-figure(4); hold on
-plot(configs_EMG(1).Time{1,1}, abs(configs_EMG(1).Data{1,1}))
-plot(configs_EMG(1).Time{1,1}, emg_avg)
-plot(configs_EMG(1).Time{1,1}, emg_rms)
+% Plot EMG of config1
+figure(3)
+for i=1:nb_EMG
+    subplot(nb_EMG+1, 1, i)
+    plot(configs_EMG(1).Time{1,i}, configs_EMG(1).Data{1,i})
+end
+plot(configs(7).Time{1,40}, configs(7).Data{1,40})
+
+%% Statistics
+
+activation = struct('Channels', {}, 'Data', {});
+% Extract stat of each config
+for i=1:length(configs)
+    % Compute transition times of trigger
+    d = diff(configs(i).Data{1,end});
+    rise_times = configs(i).Time{1,end}(circshift(d==-1, 1));
+    fall_times = configs(i).Time{1,end}(d==1);
+    
+    perc = zeros(nb_EMG, length(rise_times));
+    for j=1:length(rise_times)
+        for k=1:nb_EMG
+            [blabla1, t1_idx] = ...
+                min(abs(configs_EMG(i).Time{1,k} - rise_times(j)));
+            [blabla2, t2_idx] = ...
+                min(abs(configs_EMG(i).Time{1,k} - rise_times(j)));
+            perc(k, j) = 100 * max(configs_EMG(i).Data{1,k}(t1_idx:t2_idx));
+        end
+    end
+    rowDist = ones(1, nb_EMG);
+    activation(i) = struct('Channels', configs_EMG(i).Channels, ...
+        'Data', perc);
+end
+
+% Example of visualization
+for i=1:length(configs_EMG)
+    figure(i);
+    bar(activation(i).Data(:,4))
+end
+
+% Older trials
+% movAvg = dsp.MovingAverage(666);
+% movRMS = dsp.MovingRMS(666);
+% emg_avg = movAvg(abs(configs_EMG(1).Data{1,1}));
+% emg_rms = movRMS(abs(configs_EMG(1).Data{1,1}));
+% figure(1); plot(configs_EMG(1).Time{1,1}, abs(configs_EMG(1).Data{1,1}))
+% figure(2); plot(configs_EMG(1).Time{1,1}, emg_avg)
+% figure(3); plot(configs_EMG(1).Time{1,1}, emg_rms)
+% figure(4); hold on
+% plot(configs_EMG(1).Time{1,1}, abs(configs_EMG(1).Data{1,1}))
+% plot(configs_EMG(1).Time{1,1}, emg_avg)
+% plot(configs_EMG(1).Time{1,1}, emg_rms)
 
 % envelope(abs(configs_EMG(1).Data{1,1}),666,'rms') ?
 
