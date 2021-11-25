@@ -67,6 +67,9 @@ depth_scale = depth_sensor.get_depth_scale()
 
 depth_values = []
 
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
@@ -150,15 +153,22 @@ with mp_pose.Pose(static_image_mode=False,
 
         depth_values.append(filtered_z)
 
-        plt.scatter(current_frame, depth_z, c='b')
-        plt.scatter(current_frame, filtered_z, c='r')
+        # Draw the depth value over time
+        #plt.title("Depth over time")
+        #plt.scatter(current_frame, depth_z, c='b')
+        #plt.scatter(current_frame, filtered_z, c='r')
+
+        # Draw the skeleton over time
+        ax.set_title("Skeleton of patient")
+        ax.scatter(x, y, filtered_z)
+
         plt.pause(0.05)
         current_frame += 1
         
         if cv2.waitKey(5) & 0xFF == 27:
           break
 
-      plt.show()
+      ax.show()
 
     # to do: stop process at the end of video
     finally:
