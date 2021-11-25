@@ -1,3 +1,5 @@
+clear all
+close all
 %% Correction of .mat files (ok)
 
 % for i=1:7
@@ -14,6 +16,9 @@ unused_EMG_idx = 4;
 ACC_idx = [6, 7, 8, 13, 14, 15, 20, 21, 22, 27, 28, 29, 34, 35, 36];
 GYR_idx = [9, 10, 11, 16, 17, 18, 23, 24, 25, 30, 31, 32, 37, 38, 39];
 trigger_idx = 40;
+Channels_EMG = ["Deltoid Anterior", "Deltoid Middle", ...
+    "Deltoid Posterior", "Fingers extensor", "Biceps", "Triceps", ...
+    "Finger flexor", "Bracchioradial"];
 
 % Load baseline and pick EMG
 baseline = load("Run_number_438_baseline_Rep_1.5.mat");
@@ -24,8 +29,8 @@ baseline_EMG = struct('Channels', ...
     'Fs', mat2cell(baseline.Fs(1, EMG_idx), 1, nb_EMG));
 % Load MVC and pick MVC
 MVC = load("Run_number_439_MVC_Rep_1.6.mat");
-MVC_EMG = struct('Channels', ...
-    mat2cell(MVC.Channels(1, EMG_idx), 1, nb_EMG), ...
+%mat2cell(MVC.Channels(1, EMG_idx), 1, nb_EMG), ...
+MVC_EMG = struct('Channels', Channels_EMG, ...
     'Data', mat2cell(MVC.Data(1, EMG_idx), 1, nb_EMG), ...
     'Time', mat2cell(MVC.Time(1, EMG_idx), 1, nb_EMG), ...
     'Fs', mat2cell(MVC.Fs(1, EMG_idx), 1, nb_EMG));
@@ -38,8 +43,8 @@ for i=1:7
     fname = sprintf("config%d.mat", i);
     cfg = load(fname);
     configs(i) = cfg;
-    configs_EMG(i) = struct('Channels', ...
-        mat2cell(cfg.Channels(1, EMG_idx), 1, nb_EMG), ...
+    % mat2cell(cfg.Channels(1, EMG_idx), 1, nb_EMG), ...
+    configs_EMG(i) = struct('Channels', Channels_EMG, ...
         'Data', mat2cell(cfg.Data(1, EMG_idx), 1, nb_EMG), ...
         'Time', mat2cell(cfg.Time(1, EMG_idx), 1, nb_EMG), ...
         'Fs', mat2cell(cfg.Fs(1, EMG_idx), 1, nb_EMG));
@@ -54,7 +59,7 @@ end
 %% Apply preprocessing to the whole dataset
 
 % Butterworth parameters
-fc = 20;
+fc = 100;
 order = 4;
 
 for i=1:nb_EMG
@@ -65,20 +70,21 @@ for i=1:nb_EMG
     [b, a] = butter(order, Wn);
 
     % Baseline
-    baseline_EMG.Data{1,i} = fastrms(baseline_EMG.Data{1,i}, win);
     baseline_EMG.Data{1,i} = filter(b, a, baseline_EMG.Data{1,i});
+    baseline_EMG.Data{1,i} = fastrms(baseline_EMG.Data{1,i}, win);
 
     % MVC
-    MVC_EMG.Data{1,i} = fastrms(MVC_EMG.Data{1,i}, win);
     MVC_EMG.Data{1,i} = filter(b, a, MVC_EMG.Data{1,i});
+    MVC_EMG.Data{1,i} = fastrms(MVC_EMG.Data{1,i}, win);
 
     % Configs
     for j=1:length(configs_EMG)
-        configs_EMG(j).Data{1,i} = fastrms(configs_EMG(j).Data{1,i}, win);
         configs_EMG(j).Data{1,i} = filter(b, a, configs_EMG(j).Data{1,i});
+        configs_EMG(j).Data{1,i} = fastrms(configs_EMG(j).Data{1,i}, win);
     end
 end
 
+% figure;
 % plot(baseline_EMG.Time{1,1}, baseline_EMG.Data{1,1})
 
 %% Baseline computation and correction
@@ -104,6 +110,8 @@ for i=1:nb_EMG
     for j=1:length(configs_EMG)
         configs_EMG(j).Data{1,i} = (configs_EMG(j).Data{1,i} ...
             - muscle_baseline(i)) / muscle_MVC(i);
+        % Set neg values to 0
+        configs_EMG(j).Data{1,i}(configs_EMG(j).Data{1,i} < 0) = 0;
     end
 end
 
@@ -127,19 +135,21 @@ end
 figure(3)
 for i=1:nb_EMG
     subplot(nb_EMG+1, 1, i)
-    plot(configs_EMG(1).Time{1,i}, configs_EMG(1).Data{1,i})
+    plot(configs_EMG(2).Time{1,i}, configs_EMG(2).Data{1,i})
 end
-plot(configs(1).Time{1,40}, configs(1).Data{1,40})
+subplot(nb_EMG+1, 1, 9)
+plot(configs(2).Time{1,40}, configs(2).Data{1,40})
 
 %% Statistics
 
 activation = struct('Channels', {}, 'Data', {});
+activity_threshold = 0.05;
 % Extract stat of each config
 for i=1:length(configs)
     % Compute transition times of trigger
     d = diff(configs(i).Data{1,end});
-    rise_times = configs(i).Time{1,end}(circshift(d==-1, 1));
-    fall_times = configs(i).Time{1,end}(d==1);
+    rise_times = configs(i).Time{1,end}(circshift(d==1, 1));
+    fall_times = configs(i).Time{1,end}(d==-1);
     
     perc = zeros(nb_EMG, length(rise_times));
     for j=1:length(rise_times)
@@ -147,8 +157,12 @@ for i=1:length(configs)
             [blabla1, t1_idx] = ...
                 min(abs(configs_EMG(i).Time{1,k} - rise_times(j)));
             [blabla2, t2_idx] = ...
-                min(abs(configs_EMG(i).Time{1,k} - rise_times(j)));
-            perc(k, j) = 100 * max(configs_EMG(i).Data{1,k}(t1_idx:t2_idx));
+                min(abs(configs_EMG(i).Time{1,k} - fall_times(j)));
+            
+            useful_signal = configs_EMG(i).Data{1,k}(t1_idx:t2_idx);
+            perc(k, j) = 100 * mean(useful_signal(useful_signal>activity_threshold));
+            
+            %perc(k, j) = 100 * max(configs_EMG(i).Data{1,k}(t1_idx:t2_idx));
         end
     end
     rowDist = ones(1, nb_EMG);
@@ -156,10 +170,18 @@ for i=1:length(configs)
         'Data', perc);
 end
 
-% Example of visualization
+% Example of visualization (one of each config)
 for i=1:length(configs_EMG)
-    figure(i);
-    bar(activation(i).Data(:,4))
+    figure
+    bar(categorical(activation(i).Channels), activation(i).Data(:,4))
+end
+%%
+% Example of visualization (all for one config)
+for i=1:length(activation(6).Data(1,:))
+    figure
+    bar(categorical(activation(6).Channels), activation(6).Data(:,i))
+    ylim([0 100])
+    ylabel('Percentage of activation')
 end
 
 % Older trials
