@@ -129,7 +129,7 @@ for i=1:nb_EMG
     subplot(nb_EMG+1, 1, i)
     plot(configs_EMG(1).Time{1,i}, configs_EMG(1).Data{1,i})
 end
-plot(configs(7).Time{1,40}, configs(7).Data{1,40})
+plot(configs(1).Time{1,40}, configs(1).Data{1,40})
 
 %% Statistics
 
