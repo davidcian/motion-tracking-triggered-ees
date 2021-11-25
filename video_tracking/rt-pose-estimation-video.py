@@ -56,17 +56,16 @@ profile = pipeline_1.start(config_1)
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 
-frame_id = 0
-
-
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as pose:
-  #for frame in container.decode(video=0):
+
+    current_frame = 1
+    #plt.axis([0, 10, 0, 10])
+
     try:
       while True:
-
         # to be check: right x,y and z
         frames_1 = pipeline_1.wait_for_frames()
         depth_frame_1 = frames_1.get_depth_frame()
@@ -105,7 +104,7 @@ with mp_pose.Pose(static_image_mode=False,
             # if depth_z == 0:
             #     print(depth_image_1.shape)
             #     print(depth_image_1)
-            landmarks_coord.append([frame_id,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
+            landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
         #print(color_image_1)
 
         # print(
@@ -135,11 +134,15 @@ with mp_pose.Pose(static_image_mode=False,
             lineType)
         cv2.imshow('RealSense', depth_colormap_1)
         cv2.imshow('MediaPipe Pose', image)
-        #plot_landmarks(
-        #    results.pose_world_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        plt.scatter(current_frame, depth_z)
+        plt.pause(0.05)
+        current_frame += 1
+        
         if cv2.waitKey(5) & 0xFF == 27:
           break
-        frame_id = frame_id + 1
+
+      plt.show()
 
     # to do: stop process at the end of video
     finally:
