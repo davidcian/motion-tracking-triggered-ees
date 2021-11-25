@@ -71,6 +71,14 @@ fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.set_title("Skeleton of patient")
 
+# Bones:
+# left_shoulder - right_shoulder
+#bone_list = [[mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.RIGHT_SHOULDER]]
+
+bone_list = [[mp_pose.PoseLandmark.LEFT_WRIST, mp_pose.PoseLandmark.LEFT_ELBOW]]
+
+joint_positions = {}
+
 with mp_pose.Pose(static_image_mode=False,
     model_complexity=2,
     min_detection_confidence=0.5,
@@ -108,22 +116,15 @@ with mp_pose.Pose(static_image_mode=False,
 
         if not results.pose_landmarks:
           continue
+
         for landmark in landmarks_list:
             coord = results.pose_landmarks.landmark[landmark]
             x = min(int(coord.x * image_width), 640-1)
             y = min(int(coord.y * image_height), 480-1)
             depth_z = depth_scale * depth_image_1[y,x]
-            # if depth_z == 0:
-            #     print(depth_image_1.shape)
-            #     print(depth_image_1)
             landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
-        #print(color_image_1)
 
-        # print(
-        #     f'Left wrist coordinates: ('
-        #     f'{results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].x * image_width}, '
-        #     f'{results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y * image_height})'
-        # )
+            joint_positions[landmark] = [x, y, depth_z]
 
         mp_drawing.draw_landmarks(
             image,
@@ -162,11 +163,12 @@ with mp_pose.Pose(static_image_mode=False,
         # Draw the skeleton over time
         ax.cla()
         #ax.scatter(x, y, filtered_z, c='r')
-        for pose_landmark in results.pose_landmarks.landmark:
-          x = min(int(pose_landmark.x * image_width), 640-1)
-          y = min(int(pose_landmark.y * image_height), 480-1)
-          z = depth_scale * depth_image_1[y,x]   
+        for joint_name, joint_position in joint_positions.items():
+          x, y, z = joint_position
           ax.scatter(x, y, z, c='r')
+
+        #for bone in bone_list:
+          #ax.plot(x_bone1, y_bone1, x_bone2, y_bone2, c='b')
 
         plt.pause(0.05)
         current_frame += 1
