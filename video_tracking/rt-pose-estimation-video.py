@@ -51,6 +51,15 @@ config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30) #useful?
 
 #colorVideoCam1 = cv2.VideoWriter(save_dir+ filename[:-4]+'.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, (640, 480))
 
+def filter_z(depth_values, current_z):
+  max_z_deviation = 0.2
+  if current_z > depth_values[-1] + max_z_deviation or current_z < depth_values[-1] - max_z_deviation:
+    filtered_z = depth_values[-1]
+  else:
+    filtered_z = current_z
+
+  return filtered_z
+
 # Start streaming from camera
 profile = pipeline_1.start(config_1)
 depth_sensor = profile.get_device().first_depth_sensor()
@@ -134,13 +143,8 @@ with mp_pose.Pose(static_image_mode=False,
         cv2.imshow('RealSense', depth_colormap_1)
         cv2.imshow('MediaPipe Pose', image)
 
-        max_z_deviation = 0.2
-
         if current_frame > 1:
-          if depth_z > depth_values[-1] + max_z_deviation or depth_z < depth_values[-1] - max_z_deviation:
-            filtered_z = depth_values[-1]
-          else:
-            filtered_z = depth_z
+          filtered_z = filter_z(depth_values, depth_z)
         else:
           filtered_z = depth_z 
 
