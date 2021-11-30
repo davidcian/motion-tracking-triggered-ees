@@ -13,7 +13,12 @@ class MyWidget(QtWidgets.QWidget):
     hour = [1,2,3,4,5,6,7,8,9,10]
     temperature = [30,32,34,32,33,31,29,32,35,45]
 
-    self.graphWidget.plot(hour, temperature)
+    self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
+    self.graphWidget.setLabel('left', "Coordinate value")
+    self.graphWidget.setLabel('bottom', "Frame index")
+    self.graphWidget.setBackground('w')
+    pen = pg.mkPen(color='r', width=2)
+    self.graphWidget.plot(hour, temperature, pen=pen)
 
     self.layout = QtWidgets.QVBoxLayout(self)
     self.layout.addWidget(self.graphWidget)
