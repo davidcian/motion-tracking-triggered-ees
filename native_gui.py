@@ -16,9 +16,15 @@ import pyqtgraph.opengl as gl
 
 import numpy as np
 
+import mediapipe as mp
+
+mp_pose = mp.solutions.pose
+
 class MyWidget(QtWidgets.QWidget):
-  def __init__(self, pipeline, depth_scale):
+  def __init__(self, pipeline, depth_scale, pose):
     super().__init__()
+
+    self.pose = pose
 
     self.pipeline = pipeline
     self.depth_scale = depth_scale
@@ -75,7 +81,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    x, y, z = estimate_pose(color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    x, y, z = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
 
     self.current_frame += 1
 
@@ -126,13 +132,18 @@ if __name__ == '__main__':
     depth_sensor = profile.get_device().first_depth_sensor()
     depth_scale = depth_sensor.get_depth_scale()
 
-    app = QtWidgets.QApplication([])
+    with mp_pose.Pose(static_image_mode=False,
+      model_complexity=2,
+      min_detection_confidence=0.5,
+      min_tracking_confidence=0.5) as pose:
 
-    widget = MyWidget(pipeline_1, depth_scale)
-    widget.resize(800, 600)
-    widget.show()
+      app = QtWidgets.QApplication([])
 
-    sys.exit(app.exec())
+      widget = MyWidget(pipeline_1, depth_scale, pose)
+      widget.resize(800, 600)
+      widget.show()
+
+      sys.exit(app.exec())
   finally:
     pipeline_1.stop()
     #np.savetxt('./output/Landmarks_coordinates_'+str(file_name)+'.csv',landmarks_coord,delimiter=',')
