@@ -17,8 +17,15 @@ class MyWidget(QtWidgets.QWidget):
     self.graphWidget.setLabel('left', "Coordinate value")
     self.graphWidget.setLabel('bottom', "Frame index")
     self.graphWidget.setBackground('w')
-    pen = pg.mkPen(color='r', width=2)
-    self.graphWidget.plot(hour, temperature, pen=pen)
+    self.graphWidget.addLegend()
+
+    pen1 = pg.mkPen(color='r', width=2)
+    pen2 = pg.mkPen(color='g', width=2)
+    pen3 = pg.mkPen(color='b', width=2)
+
+    self.graphWidget.plot(hour, temperature, name='X', pen=pen1)
+    self.graphWidget.plot(hour, temperature, name='Y', pen=pen2)
+    self.graphWidget.plot(hour, temperature, name='Z', pen=pen3)
 
     self.layout = QtWidgets.QVBoxLayout(self)
     self.layout.addWidget(self.graphWidget)
