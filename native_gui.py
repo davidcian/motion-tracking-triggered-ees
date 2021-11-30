@@ -137,7 +137,6 @@ if __name__ == '__main__':
     config_1 = rs.config()
 
     if args.source == 'video':
-      print("Enabling device from file")
       rs.config.enable_device_from_file(config_1, os.path.join(args.dir, args.depth_file))
       config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
     elif args.source == 'live':
