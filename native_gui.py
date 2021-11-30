@@ -19,12 +19,14 @@ class MyWidget(QtWidgets.QWidget):
     self.pipeline = pipeline
     self.depth_scale = depth_scale
 
+    self.current_frame = 0
+
     self.graphWidget = pg.PlotWidget()
 
-    self.frame_indices = list(range(100))
-    self.x_val = [random.randint(0, 100) for _ in range(100)]
-    self.y_val = [random.randint(0, 100) for _ in range(100)]
-    self.z_val = [random.randint(0, 100) for _ in range(100)]
+    self.frame_indices = list(range(self.current_frame))
+    self.x_val = []
+    self.y_val = []
+    self.z_val = []
 
     self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
     self.graphWidget.setLabel('left', "Coordinate value")
@@ -36,39 +38,39 @@ class MyWidget(QtWidgets.QWidget):
     pen2 = pg.mkPen(color='g', width=2)
     pen3 = pg.mkPen(color='b', width=2)
 
-    x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
-    y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
-    z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
+    self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
+    self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
+    self.z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
 
     self.layout = QtWidgets.QVBoxLayout(self)
     self.layout.addWidget(self.graphWidget)
 
     self.timer = QtCore.QTimer(self)
-    y_seqs = [self.x_val, self.y_val, self.z_val]
-    refs = [x_line_ref, y_line_ref, z_line_ref]
-    self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot_data(y_seqs, refs))
-    self.timer.start(1000)
-
-    self.current_frame = 1
+    self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot_data())
+    update_interval = 100
+    self.timer.start(update_interval)
   
-  def update_plot_data(self, y_seqs, refs):
+  def update_plot_data(self):
     # to be check: right x,y and z
     frames_1 = self.pipeline.wait_for_frames()
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    estimate_pose(color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    x, y, z = estimate_pose(color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
 
     self.current_frame += 1
 
-    self.frame_indices = self.frame_indices[1:]
-    self.frame_indices.append(self.frame_indices[-1] + 1)
+    #self.frame_indices = self.frame_indices[1:]
+    #self.frame_indices.append(self.frame_indices[-1] + 1)
+    self.frame_indices.append(self.current_frame)
 
-    for i, ref in enumerate(refs):
-      y_seqs[i] = y_seqs[i][1:]
-      y_seqs[i].append(random.randint(0, 100))
+    self.x_val.append(x)
+    self.y_val.append(y)
+    self.z_val.append(z)
 
-      ref.setData(self.frame_indices, y_seqs[i])
+    self.x_line_ref.setData(self.frame_indices, self.x_val)
+    self.y_line_ref.setData(self.frame_indices, self.y_val)
+    self.z_line_ref.setData(self.frame_indices, self.z_val)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

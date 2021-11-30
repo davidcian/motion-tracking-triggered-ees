@@ -105,3 +105,5 @@ def estimate_pose(color_frame, depth_frame, depth_scale, current_frame):
       #x1, y1, z1 = joint_positions[bone[0]]
       #x2, y2, z2 = joint_positions[bone[1]]
       #ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
+
+    return x, y, depth_z
