@@ -92,6 +92,8 @@ class MyWidget(QtWidgets.QWidget):
     color_frame_1 = frames_1.get_color_frame()
 
     x, y, z, joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    planned_joint_positions, planned_bones = None, None
+    expected_joint_positions, expected_bones = None, None
 
     self.current_frame += 1
 
