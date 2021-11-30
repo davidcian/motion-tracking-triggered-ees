@@ -34,6 +34,8 @@ bone_list = [[mp_pose.PoseLandmark.LEFT_WRIST, mp_pose.PoseLandmark.LEFT_ELBOW],
   [mp_pose.PoseLandmark.LEFT_SHOULDER, mp_pose.PoseLandmark.RIGHT_SHOULDER], [mp_pose.PoseLandmark.RIGHT_WRIST, mp_pose.PoseLandmark.RIGHT_ELBOW],
   [mp_pose.PoseLandmark.RIGHT_ELBOW, mp_pose.PoseLandmark.RIGHT_SHOULDER]]
 
+bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
+
 joint_positions = {}
 
 def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
@@ -97,9 +99,9 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
     #x, y, z = joint_position
     #ax.scatter(x, y, z, c='r')
 
-  #for bone in bone_list:
-    #x1, y1, z1 = joint_positions[bone[0]]
-    #x2, y2, z2 = joint_positions[bone[1]]
-    #ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
+  for i, bone in enumerate(bone_list):
+    x1, y1, z1 = joint_positions[bone[0]]
+    x2, y2, z2 = joint_positions[bone[1]]
+    bones[i] = [x1, y1, z1, x2, y2, z2]
 
-  return x, y, depth_z, joint_positions
+  return x, y, depth_z, joint_positions, bones

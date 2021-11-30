@@ -59,13 +59,19 @@ class MyWidget(QtWidgets.QWidget):
     ###
 
     w = gl.GLViewWidget()
+
     self.pos = np.array([1, 1, 3])
     self.sp2 = gl.GLScatterPlotItem(pos=self.pos)
+
+    # Bone drawing
+    self.bone_pos = np.array([[0, 0, 1], [2, 2, 1]])
+    self.bones = gl.GLLinePlotItem(pos=self.bone_pos, width=1)
 
     g = gl.GLGridItem()
     w.addItem(g)
 
     w.addItem(self.sp2)
+    w.addItem(self.bones)
 
     ###
 
@@ -82,7 +88,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    x, y, z, joint_positions = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    x, y, z, joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
 
     self.current_frame += 1
 
@@ -105,9 +111,14 @@ class MyWidget(QtWidgets.QWidget):
     for joint_name, joint_position in joint_positions.items():
       pos[idx, 0] = joint_position[0]
       pos[idx, 1] = joint_position[1]
-      pos[idx, 2] = 1
+      pos[idx, 2] = joint_position[2]
       idx += 1
     self.sp2.setData(pos=pos)
+
+    x1, y1, z1, x2, y2, z2 = bones[0]
+    bones_pos = np.array([[x1, y1, z1], [x2, y2, z2]])
+
+    self.bones.setData(pos=bones_pos)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
