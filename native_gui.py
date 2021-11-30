@@ -1,3 +1,4 @@
+from ntpath import join
 import sys
 import random
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -81,7 +82,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    x, y, z = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    x, y, z, joint_positions = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
 
     self.current_frame += 1
 
@@ -99,7 +100,14 @@ class MyWidget(QtWidgets.QWidget):
 
     ###
 
-    self.sp2.setData(pos=np.array([x, y, z]))
+    pos = np.empty([len(joint_positions), 3])
+    idx = 0
+    for joint_name, joint_position in joint_positions.items():
+      pos[idx, 0] = joint_position[0]
+      pos[idx, 1] = joint_position[1]
+      pos[idx, 2] = 1
+      idx += 1
+    self.sp2.setData(pos=pos)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

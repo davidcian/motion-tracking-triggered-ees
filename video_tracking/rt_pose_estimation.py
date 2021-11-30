@@ -1,3 +1,4 @@
+from ntpath import join
 import cv2
 import mediapipe as mp
 import av
@@ -101,4 +102,4 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
     #x2, y2, z2 = joint_positions[bone[1]]
     #ax.plot([x1, x2], [y1, y2], [z1, z2], c='b')
 
-  return x, y, depth_z
+  return x, y, depth_z, joint_positions
