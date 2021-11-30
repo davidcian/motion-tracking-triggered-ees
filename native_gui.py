@@ -11,7 +11,7 @@ import argparse
 
 import os
 
-from video_tracking.rt_pose_estimation import estimate_pose
+from video_tracking.rt_pose_estimation import estimate_pose, bone_list
 
 import pyqtgraph.opengl as gl
 
@@ -63,15 +63,18 @@ class MyWidget(QtWidgets.QWidget):
     self.pos = np.array([1, 1, 3])
     self.sp2 = gl.GLScatterPlotItem(pos=self.pos)
 
-    # Bone drawing
-    self.bone_pos = np.array([[0, 0, 1], [2, 2, 1]])
-    self.bones = gl.GLLinePlotItem(pos=self.bone_pos, width=1)
-
     g = gl.GLGridItem()
     w.addItem(g)
 
+    # Bone drawing
+    self.bone_item_positions = []
+    self.bone_items = []
+    for i in range(len(bone_list)):
+      self.bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
+      self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
+      w.addItem(self.bone_items[i])
+
     w.addItem(self.sp2)
-    w.addItem(self.bones)
 
     ###
 
@@ -115,10 +118,10 @@ class MyWidget(QtWidgets.QWidget):
       idx += 1
     self.sp2.setData(pos=pos)
 
-    x1, y1, z1, x2, y2, z2 = bones[0]
-    bones_pos = np.array([[x1, y1, z1], [x2, y2, z2]])
-
-    self.bones.setData(pos=bones_pos)
+    for i, bone in enumerate(bones):
+      x1, y1, z1, x2, y2, z2 = bone
+      self.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
+      self.bone_items[i].setData(pos=self.bone_item_positions[i])
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
