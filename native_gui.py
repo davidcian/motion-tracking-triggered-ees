@@ -12,6 +12,10 @@ import os
 
 from video_tracking.rt_pose_estimation import estimate_pose
 
+import pyqtgraph.opengl as gl
+
+import numpy as np
+
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale):
     super().__init__()
@@ -43,7 +47,22 @@ class MyWidget(QtWidgets.QWidget):
     self.z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
 
     self.layout = QtWidgets.QVBoxLayout(self)
-    self.layout.addWidget(self.graphWidget)
+    #self.layout.addWidget(self.graphWidget)
+
+    ###
+
+    w = gl.GLViewWidget()
+    self.pos = np.array([1, 1, 3])
+    self.sp2 = gl.GLScatterPlotItem(pos=self.pos)
+
+    g = gl.GLGridItem()
+    w.addItem(g)
+
+    w.addItem(self.sp2)
+
+    ###
+
+    self.layout.addWidget(w)
 
     self.timer = QtCore.QTimer(self)
     self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot_data())
@@ -71,6 +90,10 @@ class MyWidget(QtWidgets.QWidget):
     self.x_line_ref.setData(self.frame_indices, self.x_val)
     self.y_line_ref.setData(self.frame_indices, self.y_val)
     self.z_line_ref.setData(self.frame_indices, self.z_val)
+
+    ###
+
+    self.sp2.setData(pos=np.array([x, y, z]))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
