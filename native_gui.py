@@ -33,6 +33,7 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.x_val = []
     self.y_val = []
     self.z_val = []
+    self.filtered_z_val = []
 
     self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
     self.graphWidget.setLabel('left', "Coordinate value")
@@ -44,9 +45,10 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     pen2 = pg.mkPen(color='g', width=2)
     pen3 = pg.mkPen(color='b', width=2)
 
-    self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
-    self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
+    #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
+    #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
     self.z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
+    self.filtered_z_line_ref = self.graphWidget.plot(self.frame_indices, self.filtered_z_val, name='Filtered Z', pen=pen1)
 
     self.layout = QtWidgets.QVBoxLayout(self)
     
@@ -60,16 +62,18 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.layout.addWidget(self.show_y_button)
     self.layout.addWidget(self.show_z_button)
 
-  def update(self, frame_indices, x, y, z):
+  def update(self, frame_indices, x, y, z, filtered_z):
     self.frame_indices = frame_indices
 
     self.x_val.append(x)
     self.y_val.append(y)
     self.z_val.append(z)
+    self.filtered_z_val.append(filtered_z)
 
-    self.x_line_ref.setData(self.frame_indices, self.x_val)
-    self.y_line_ref.setData(self.frame_indices, self.y_val)
+    #self.x_line_ref.setData(self.frame_indices, self.x_val)
+    #self.y_line_ref.setData(self.frame_indices, self.y_val)
     self.z_line_ref.setData(self.frame_indices, self.z_val)
+    self.filtered_z_line_ref.setData(self.frame_indices, self.filtered_z_val)
 
   @Slot()
   def show_x_coordinate_plot(self):
@@ -143,7 +147,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    x, y, z, joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    x, y, z, filtered_z, joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
 
@@ -153,7 +157,7 @@ class MyWidget(QtWidgets.QWidget):
     #self.frame_indices.append(self.frame_indices[-1] + 1)
     self.frame_indices.append(self.current_frame)
 
-    self.coordinate_plot_widget.update(self.frame_indices, x, y, z)
+    self.coordinate_plot_widget.update(self.frame_indices, x, y, z, filtered_z)
 
     ###
 

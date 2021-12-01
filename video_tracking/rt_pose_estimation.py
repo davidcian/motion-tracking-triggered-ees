@@ -118,4 +118,4 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
     x2, y2, z2 = joint_positions[bone[1]]
     bones[i] = [x1, y1, z1, x2, y2, z2]
 
-  return x, y, depth_z, joint_positions, bones
+  return x, y, depth_z, filtered_z, joint_positions, bones
