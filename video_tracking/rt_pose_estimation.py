@@ -30,6 +30,9 @@ landmarks_list += additional_landmarks_list
 depth_values = []
 raw_depth_values = []
 
+raw_x_values = []
+raw_y_values = []
+
 #fig = plt.figure()
 #ax = fig.add_subplot(projection='3d')
 #ax.set_title("Skeleton of patient")
@@ -96,7 +99,7 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
 
   filtered_z = hampel_filter(raw_depth_values, depth_z)
 
-  depth_values.append(filtered_z)
+  depth_values.append(filtered_z) # TODO necessary?
 
   # Draw the depth value over time
   plt.title("Depth over time")
