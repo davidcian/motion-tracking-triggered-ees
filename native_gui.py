@@ -23,24 +23,13 @@ import mediapipe as mp
 
 mp_pose = mp.solutions.pose
 
-@Slot()
-def say_hello():
-  print("Hello button clicked")
-
-class MyWidget(QtWidgets.QWidget):
-  def __init__(self, pipeline, depth_scale, pose):
+class CoordinatePlotWidget(QtWidgets.QWidget):
+  def __init__(self):
     super().__init__()
-
-    self.pose = pose
-
-    self.pipeline = pipeline
-    self.depth_scale = depth_scale
-
-    self.current_frame = 0
 
     self.graphWidget = pg.PlotWidget()
 
-    self.frame_indices = list(range(self.current_frame))
+    self.frame_indices = []
     self.x_val = []
     self.y_val = []
     self.z_val = []
@@ -60,7 +49,48 @@ class MyWidget(QtWidgets.QWidget):
     self.z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
 
     self.layout = QtWidgets.QVBoxLayout(self)
-    #self.layout.addWidget(self.graphWidget)
+    
+    self.layout.addWidget(self.graphWidget)
+
+  def update(self, frame_indices, x, y, z):
+    self.frame_indices = frame_indices
+
+    self.x_val.append(x)
+    self.y_val.append(y)
+    self.z_val.append(z)
+
+    self.x_line_ref.setData(self.frame_indices, self.x_val)
+    self.y_line_ref.setData(self.frame_indices, self.y_val)
+    self.z_line_ref.setData(self.frame_indices, self.z_val)
+
+  @Slot()
+  def show_x_coordinate_plot(self):
+    self.graphWidget.show()
+
+  @Slot()
+  def show_y_coordinate_plot(self):
+    self.graphWidget.show()
+
+  @Slot()
+  def show_z_coordinate_plot(self):
+    self.graphWidget.show()
+
+class MyWidget(QtWidgets.QWidget):
+  def __init__(self, pipeline, depth_scale, pose):
+    super().__init__()
+
+    self.pose = pose
+
+    self.pipeline = pipeline
+    self.depth_scale = depth_scale
+
+    self.coordinate_plot_widget = CoordinatePlotWidget()
+
+    self.current_frame = 0
+
+    self.frame_indices = list(range(self.current_frame))
+
+    self.layout = QtWidgets.QVBoxLayout(self)
 
     ###
 
@@ -91,9 +121,14 @@ class MyWidget(QtWidgets.QWidget):
     update_interval = 100
     self.timer.start(update_interval)
 
-    button = QPushButton("Clicke ye olde button")
-    button.clicked.connect(say_hello)
-  
+    show_coordinate_plot_button = QPushButton("Show coordinate plots")
+    show_coordinate_plot_button.clicked.connect(self.show_coordinate_plots)
+    self.layout.addWidget(show_coordinate_plot_button)
+
+  @Slot()
+  def show_coordinate_plots(self):
+    self.coordinate_plot_widget.show()
+
   def update_plot_data(self):
     # to be check: right x,y and z
     frames_1 = self.pipeline.wait_for_frames()
@@ -110,13 +145,7 @@ class MyWidget(QtWidgets.QWidget):
     #self.frame_indices.append(self.frame_indices[-1] + 1)
     self.frame_indices.append(self.current_frame)
 
-    self.x_val.append(x)
-    self.y_val.append(y)
-    self.z_val.append(z)
-
-    self.x_line_ref.setData(self.frame_indices, self.x_val)
-    self.y_line_ref.setData(self.frame_indices, self.y_val)
-    self.z_line_ref.setData(self.frame_indices, self.z_val)
+    self.coordinate_plot_widget.update(self.frame_indices, x, y, z)
 
     ###
 
