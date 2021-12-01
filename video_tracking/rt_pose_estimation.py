@@ -92,12 +92,16 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   y = min(int(coord.y * image_height), 480-1)
   depth_z = depth_scale * depth_image_1[y,x]
 
-  raw_depth_values.append(depth_z)
-
   cv2.imshow('RealSense', depth_colormap_1)
   cv2.imshow('MediaPipe Pose', image)
 
-  filtered_z = hampel_filter(raw_depth_values, depth_z)
+  if raw_depth_values:
+    filtered_z = hampel_filter(raw_depth_values, depth_z)
+  else:
+    filtered_z = depth_z
+
+  # WARNING: only append to values after filtering!
+  raw_depth_values.append(depth_z)
 
   depth_values.append(filtered_z) # TODO necessary?
 

@@ -1,5 +1,8 @@
 def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, k=1.4826, n_accepted_stds=3):
-  all_values = prev_values + current_value
+  #print("Prev values", prev_values)
+  #print("Current value", current_value)
+  all_values = prev_values + [current_value]
+  #print("All values", all_values)
   # The index of the latest value
   current_index = len(all_values)
   # The start index of the window
@@ -16,5 +19,7 @@ def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, 
   window_dev_median = window_abs_dev[len(window_abs_dev) // 2]
   # The estimated standard deviation from the MAD
   est_std = k * window_dev_median
+
+  #print("Current value {} Median value {}".format(current_value, window_median))
 
   return window_median if abs(current_value - window_median) > n_accepted_stds * est_std else current_value
