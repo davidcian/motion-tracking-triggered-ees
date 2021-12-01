@@ -52,6 +52,14 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     
     self.layout.addWidget(self.graphWidget)
 
+    self.show_x_button = QPushButton("Show X coordinate")
+    self.show_y_button = QPushButton("Show Y coordinate")
+    self.show_z_button = QPushButton("Show Z coordinate")
+
+    self.layout.addWidget(self.show_x_button)
+    self.layout.addWidget(self.show_y_button)
+    self.layout.addWidget(self.show_z_button)
+
   def update(self, frame_indices, x, y, z):
     self.frame_indices = frame_indices
 
