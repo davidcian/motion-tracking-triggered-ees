@@ -5,7 +5,7 @@ import av
 import numpy as np
 import matplotlib.pyplot as plt
 
-from video_tracking.filter_bank import filter_z
+from video_tracking.filter_bank import hampel_filter
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -92,7 +92,7 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   cv2.imshow('MediaPipe Pose', image)
 
   if current_frame > 1:
-    filtered_z = filter_z(depth_values, depth_z)
+    filtered_z = hampel_filter(depth_values, depth_z)
   else:
     filtered_z = depth_z 
 

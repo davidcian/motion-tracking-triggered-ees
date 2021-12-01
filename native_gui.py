@@ -2,6 +2,8 @@ from ntpath import join
 import sys
 import random
 from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6.QtWidgets import QPushButton
+from PySide6.QtCore import Slot
 
 import pyrealsense2 as rs
 
@@ -20,6 +22,10 @@ import numpy as np
 import mediapipe as mp
 
 mp_pose = mp.solutions.pose
+
+@Slot()
+def say_hello():
+  print("Hello button clicked")
 
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
@@ -84,6 +90,9 @@ class MyWidget(QtWidgets.QWidget):
     self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot_data())
     update_interval = 100
     self.timer.start(update_interval)
+
+    button = QPushButton("Clicke ye olde button")
+    button.clicked.connect(say_hello)
   
   def update_plot_data(self):
     # to be check: right x,y and z
