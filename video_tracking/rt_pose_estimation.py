@@ -28,6 +28,7 @@ additional_landmarks_list = [mp_pose.PoseLandmark.NOSE, mp_pose.PoseLandmark.RIG
 landmarks_list += additional_landmarks_list
 
 depth_values = []
+raw_depth_values = []
 
 #fig = plt.figure()
 #ax = fig.add_subplot(projection='3d')
@@ -88,13 +89,12 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   y = min(int(coord.y * image_height), 480-1)
   depth_z = depth_scale * depth_image_1[y,x]
 
+  raw_depth_values.append(depth_z)
+
   cv2.imshow('RealSense', depth_colormap_1)
   cv2.imshow('MediaPipe Pose', image)
 
-  if current_frame > 1:
-    filtered_z = hampel_filter(depth_values, depth_z)
-  else:
-    filtered_z = depth_z 
+  filtered_z = hampel_filter(raw_depth_values, depth_z)
 
   depth_values.append(filtered_z)
 
