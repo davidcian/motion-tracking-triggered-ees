@@ -12,11 +12,11 @@ def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, 
   # The values inside the window
   window_values = all_values[start_index:end_index]
   # The median of the window
-  window_median = window_values[len(window_values) // 2]
+  window_median = sorted(window_values)[len(window_values) // 2]
   # The absolute deviations inside the window
   window_abs_dev = [abs(win_val - window_median) for win_val in window_values]
   # The median absolute deviation of the window
-  window_dev_median = window_abs_dev[len(window_abs_dev) // 2]
+  window_dev_median = sorted(window_abs_dev)[len(window_abs_dev) // 2]
   # The estimated standard deviation from the MAD
   est_std = k * window_dev_median
 
