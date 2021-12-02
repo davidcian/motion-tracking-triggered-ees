@@ -5,7 +5,7 @@ import av
 import numpy as np
 import matplotlib.pyplot as plt
 
-from video_tracking.filter_bank import filter_z
+from video_tracking.filter_bank import hampel_filter
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -27,11 +27,16 @@ additional_landmarks_list = [mp_pose.PoseLandmark.NOSE, mp_pose.PoseLandmark.RIG
 
 landmarks_list += additional_landmarks_list
 
-depth_values = []
+raw_x_values = {landmark: [] for landmark in landmarks_list}
+filtered_x_values = {landmark: [] for landmark in landmarks_list}
+raw_y_values = {landmark: [] for landmark in landmarks_list}
+filtered_y_values = {landmark: [] for landmark in landmarks_list}
+raw_z_values = {landmark: [] for landmark in landmarks_list}
+filtered_z_values = {landmark: [] for landmark in landmarks_list}
 
-#fig = plt.figure()
-#ax = fig.add_subplot(projection='3d')
-#ax.set_title("Skeleton of patient")
+x_filter = lambda raw_x_values, current_x: hampel_filter(raw_x_values, current_x)
+y_filter = lambda raw_y_values, current_y: hampel_filter(raw_y_values, current_y)
+z_filter = lambda raw_z_values, current_z: hampel_filter(raw_z_values, current_z, window_size=20, window_offset=-10)
 
 # Bones:
 # left_shoulder - right_shoulder
@@ -45,9 +50,11 @@ additional_bones_list = [[mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RI
 
 bone_list += additional_bones_list
 
-bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
+raw_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
+filtered_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
 
-joint_positions = {}
+raw_joint_positions = {}
+filtered_joint_positions = {}
 
 def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   depth_image_1 = np.asanyarray(depth_frame.get_data())
@@ -66,14 +73,50 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   image_height, image_width, _ = image.shape
   results = pose.process(image)
 
+  # TODO check validity of check (bruh, meta)
+  if results.pose_landmarks == None:
+    print("No pose found, check if someone is in the camera field!")
+
   for landmark in landmarks_list:
       coord = results.pose_landmarks.landmark[landmark]
       x = min(int(coord.x * image_width), 640-1)
       y = min(int(coord.y * image_height), 480-1)
-      depth_z = depth_scale * depth_image_1[y,x]
-      landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
+      z = depth_scale * depth_image_1[y,x]
+      landmarks_coord.append([current_frame, landmark,coord.x * image_width,coord.y * image_height, coord.z, z])
 
-      joint_positions[landmark] = [x, y, depth_z]
+      raw_joint_positions[landmark] = [x, y, z]
+
+      if raw_x_values[landmark]:
+        filtered_x = x_filter(raw_x_values[landmark], x)
+      else:
+        filtered_x = x
+
+      # WARNING: only append to values after filtering!
+      raw_x_values[landmark].append(x)
+
+      filtered_x_values[landmark].append(filtered_x) # TODO necessary?
+
+      if raw_y_values[landmark]:
+        filtered_y = y_filter(raw_y_values[landmark], y)
+      else:
+        filtered_y = y
+
+      # WARNING: only append to values after filtering!
+      raw_y_values[landmark].append(y)
+
+      filtered_y_values[landmark].append(filtered_y) # TODO necessary?
+
+      if raw_z_values[landmark]:
+        filtered_z = z_filter(raw_z_values[landmark], z)
+      else:
+        filtered_z = z
+
+      # WARNING: only append to values after filtering!
+      raw_z_values[landmark].append(z)
+
+      filtered_z_values[landmark].append(filtered_z) # TODO necessary?
+
+      filtered_joint_positions[landmark] = [filtered_x, filtered_y, filtered_z]
 
   mp_drawing.draw_landmarks(
       image,
@@ -83,36 +126,17 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
 
   # Flip the image horizontally for a selfie-view display.
   #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
-  coord = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
-  x = min(int(coord.x * image_width), 640-1)
-  y = min(int(coord.y * image_height), 480-1)
-  depth_z = depth_scale * depth_image_1[y,x]
 
   cv2.imshow('RealSense', depth_colormap_1)
   cv2.imshow('MediaPipe Pose', image)
 
-  if current_frame > 1:
-    filtered_z = filter_z(depth_values, depth_z)
-  else:
-    filtered_z = depth_z 
-
-  depth_values.append(filtered_z)
-
-  # Draw the depth value over time
-  plt.title("Depth over time")
-  plt.scatter(current_frame, depth_z, c='b')
-  plt.scatter(current_frame, filtered_z, c='r')
-
-  # Draw the skeleton over time
-  #ax.cla()
-  #ax.scatter(x, y, filtered_z, c='r')
-  #for joint_name, joint_position in joint_positions.items():
-    #x, y, z = joint_position
-    #ax.scatter(x, y, z, c='r')
-
   for i, bone in enumerate(bone_list):
-    x1, y1, z1 = joint_positions[bone[0]]
-    x2, y2, z2 = joint_positions[bone[1]]
-    bones[i] = [x1, y1, z1, x2, y2, z2]
+    x1, y1, z1 = raw_joint_positions[bone[0]]
+    x2, y2, z2 = raw_joint_positions[bone[1]]
+    raw_bones[i] = [x1, y1, z1, x2, y2, z2]
 
-  return x, y, depth_z, joint_positions, bones
+    x1, y1, z1 = filtered_joint_positions[bone[0]]
+    x2, y2, z2 = filtered_joint_positions[bone[1]]
+    filtered_bones[i] = [x1, y1, z1, x2, y2, z2]
+
+  return raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones

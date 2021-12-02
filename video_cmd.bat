@@ -1,0 +1,1 @@
+python native_gui.py -d D:\sensorimotor-data -f recording3.avi -z recording3.bag -w true
