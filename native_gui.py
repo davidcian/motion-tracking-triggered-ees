@@ -2,7 +2,7 @@ from ntpath import join
 import sys
 import random
 from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QPushButton, QComboBox
 from PySide6.QtCore import Slot
 
 import pyrealsense2 as rs
@@ -34,7 +34,8 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget = pg.PlotWidget()
 
     self.frame_indices = []
-    self.features_vals = {'x_val': [], 'y_val': [], 'z_val': [], 'filtered_z_val': []}
+    # Features tracked by the coordinate plot (e.g. Cartesian coordinates of a joint)
+    self.features_vals = {'x_val': [], 'filtered_x_val': [], 'y_val': [], 'filtered_y_val': [], 'z_val': [], 'filtered_z_val': []}
 
     self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
     self.graphWidget.setLabel('left', "Coordinate value")
@@ -42,9 +43,12 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget.setBackground('w')
     self.graphWidget.addLegend()
 
-    self.visible_features = ['z_val', 'filtered_z_val']
+    # Names of features currently displayed on plot
+    # self.visible_features = ['z_val', 'filtered_z_val']
+    self.visible_features = ['y_val', 'filtered_y_val']
 
-    self.feature_pens = {'z_val': pen1, 'filtered_z_val': pen2}
+    # self.feature_pens = {'z_val': pen1, 'filtered_z_val': pen2}
+    self.feature_pens = {'y_val': pen1, 'filtered_y_val': pen2}
 
     #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
     #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
@@ -145,6 +149,10 @@ class MyWidget(QtWidgets.QWidget):
     show_coordinate_plot_button = QPushButton("Show coordinate plots")
     show_coordinate_plot_button.clicked.connect(self.show_coordinate_plots)
     self.layout.addWidget(show_coordinate_plot_button)
+
+    joint_choice_combo = QComboBox(self)
+    joint_choice_combo.addItem('Joint 1')
+    self.layout.addWidget(joint_choice_combo)
 
   @Slot()
   def show_coordinate_plots(self):
