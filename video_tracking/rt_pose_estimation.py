@@ -50,7 +50,8 @@ additional_bones_list = [[mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RI
 
 bone_list += additional_bones_list
 
-bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
+raw_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
+filtered_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
 
 raw_joint_positions = {}
 filtered_joint_positions = {}
@@ -126,8 +127,12 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   cv2.imshow('MediaPipe Pose', image)
 
   for i, bone in enumerate(bone_list):
+    x1, y1, z1 = raw_joint_positions[bone[0]]
+    x2, y2, z2 = raw_joint_positions[bone[1]]
+    raw_bones[i] = [x1, y1, z1, x2, y2, z2]
+
     x1, y1, z1 = filtered_joint_positions[bone[0]]
     x2, y2, z2 = filtered_joint_positions[bone[1]]
-    bones[i] = [x1, y1, z1, x2, y2, z2]
+    filtered_bones[i] = [x1, y1, z1, x2, y2, z2]
 
-  return raw_joint_positions, filtered_joint_positions, bones
+  return raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones

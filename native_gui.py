@@ -23,6 +23,10 @@ import mediapipe as mp
 
 mp_pose = mp.solutions.pose
 
+pen1 = pg.mkPen(color='r', width=2)
+pen2 = pg.mkPen(color='g', width=2)
+pen3 = pg.mkPen(color='b', width=2)
+
 class CoordinatePlotWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
@@ -40,10 +44,6 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget.setLabel('bottom', "Frame index")
     self.graphWidget.setBackground('w')
     self.graphWidget.addLegend()
-
-    pen1 = pg.mkPen(color='r', width=2)
-    pen2 = pg.mkPen(color='g', width=2)
-    pen3 = pg.mkPen(color='b', width=2)
 
     #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
     #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
@@ -147,7 +147,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    raw_joint_positions, filtered_joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
 
@@ -157,23 +157,44 @@ class MyWidget(QtWidgets.QWidget):
     #self.frame_indices.append(self.frame_indices[-1] + 1)
     self.frame_indices.append(self.current_frame)
 
-    x, y, z = raw_joint_positions[mp_pose.PoseLandmark.LEFT_WRIST]
-    f_x, f_y, filtered_z = filtered_joint_positions[mp_pose.PoseLandmark.LEFT_WRIST]
+    selected_joint = mp_pose.PoseLandmark.LEFT_WRIST
+
+    x, y, z = raw_joint_positions[selected_joint]
+    filtered_x, filtered_y, filtered_z = filtered_joint_positions[selected_joint]
 
     self.coordinate_plot_widget.update(self.frame_indices, x, y, z, filtered_z)
 
     ###
 
-    pos = np.empty([len(filtered_joint_positions), 3])
+    # Plot raw (red) & filtered data (blue) joints
+    raw_joint_color = [1.0, 0, 0, 1.0]
+    filtered_joint_color = [0, 1.0, 0, 1.0]
+
+    raw_pos = np.empty([len(raw_joint_positions), 3])
+    raw_color = np.array([raw_joint_color for _ in range(len(raw_joint_positions))])
+    idx = 0
+    for joint_name, joint_position in raw_joint_positions.items():
+      raw_pos[idx, 0] = joint_position[0]
+      raw_pos[idx, 1] = joint_position[1]
+      raw_pos[idx, 2] = joint_position[2]
+      idx += 1
+
+    filtered_pos = np.empty([len(filtered_joint_positions), 3])
+    filtered_color = np.array([filtered_joint_color for _ in range(len(filtered_joint_positions))])
     idx = 0
     for joint_name, joint_position in filtered_joint_positions.items():
-      pos[idx, 0] = joint_position[0]
-      pos[idx, 1] = joint_position[1]
-      pos[idx, 2] = joint_position[2]
+      filtered_pos[idx, 0] = joint_position[0]
+      filtered_pos[idx, 1] = joint_position[1]
+      filtered_pos[idx, 2] = joint_position[2]
       idx += 1
-    self.sp2.setData(pos=pos)
 
-    for i, bone in enumerate(bones):
+    all_pos = np.vstack([raw_pos, filtered_pos])
+    all_color = np.vstack([raw_color, filtered_color])
+
+    self.sp2.setData(pos=all_pos, color=all_color)
+
+    # Plot raw data bones
+    for i, bone in enumerate(filtered_bones):
       x1, y1, z1, x2, y2, z2 = bone
       self.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
       self.bone_items[i].setData(pos=self.bone_item_positions[i])
