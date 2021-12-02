@@ -36,7 +36,7 @@ filtered_z_values = {landmark: [] for landmark in landmarks_list}
 
 x_filter = lambda raw_x_values, current_x: hampel_filter(raw_x_values, current_x)
 y_filter = lambda raw_y_values, current_y: hampel_filter(raw_y_values, current_y)
-z_filter = lambda raw_z_values, current_z: hampel_filter(raw_z_values, current_z)
+z_filter = lambda raw_z_values, current_z: hampel_filter(raw_z_values, current_z, window_size=20, window_offset=-10)
 
 # Bones:
 # left_shoulder - right_shoulder
