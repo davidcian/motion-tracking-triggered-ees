@@ -147,7 +147,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
-    x, y, z, filtered_z, joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    raw_joint_positions, filtered_joint_positions, bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
 
@@ -157,13 +157,16 @@ class MyWidget(QtWidgets.QWidget):
     #self.frame_indices.append(self.frame_indices[-1] + 1)
     self.frame_indices.append(self.current_frame)
 
+    x, y, z = raw_joint_positions[mp_pose.PoseLandmark.LEFT_WRIST]
+    f_x, f_y, filtered_z = filtered_joint_positions[mp_pose.PoseLandmark.LEFT_WRIST]
+
     self.coordinate_plot_widget.update(self.frame_indices, x, y, z, filtered_z)
 
     ###
 
-    pos = np.empty([len(joint_positions), 3])
+    pos = np.empty([len(raw_joint_positions), 3])
     idx = 0
-    for joint_name, joint_position in joint_positions.items():
+    for joint_name, joint_position in raw_joint_positions.items():
       pos[idx, 0] = joint_position[0]
       pos[idx, 1] = joint_position[1]
       pos[idx, 2] = joint_position[2]

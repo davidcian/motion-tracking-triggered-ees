@@ -27,8 +27,8 @@ additional_landmarks_list = [mp_pose.PoseLandmark.NOSE, mp_pose.PoseLandmark.RIG
 
 landmarks_list += additional_landmarks_list
 
-depth_values = []
-raw_depth_values = []
+raw_depth_values = {landmark: [] for landmark in landmarks_list}
+filtered_depth_values = {landmark: [] for landmark in landmarks_list}
 
 raw_x_values = []
 raw_y_values = []
@@ -36,6 +36,8 @@ raw_y_values = []
 #fig = plt.figure()
 #ax = fig.add_subplot(projection='3d')
 #ax.set_title("Skeleton of patient")
+
+z_filter = lambda raw_depth_values, current_z: hampel_filter(raw_depth_values, current_z)
 
 # Bones:
 # left_shoulder - right_shoulder
@@ -51,7 +53,8 @@ bone_list += additional_bones_list
 
 bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
 
-joint_positions = {}
+raw_joint_positions = {}
+filtered_joint_positions = {}
 
 def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   depth_image_1 = np.asanyarray(depth_frame.get_data())
@@ -77,7 +80,19 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
       depth_z = depth_scale * depth_image_1[y,x]
       landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
 
-      joint_positions[landmark] = [x, y, depth_z]
+      raw_joint_positions[landmark] = [x, y, depth_z]
+
+      if raw_depth_values[landmark]:
+        filtered_z = z_filter(raw_depth_values[landmark], depth_z)
+      else:
+        filtered_z = depth_z
+
+      filtered_joint_positions[landmark] = [x, y, filtered_z]
+
+      # WARNING: only append to values after filtering!
+      raw_depth_values[landmark].append(depth_z)
+
+      filtered_depth_values[landmark].append(filtered_z) # TODO necessary?
 
   mp_drawing.draw_landmarks(
       image,
@@ -87,39 +102,13 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
 
   # Flip the image horizontally for a selfie-view display.
   #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
-  coord = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
-  x = min(int(coord.x * image_width), 640-1)
-  y = min(int(coord.y * image_height), 480-1)
-  depth_z = depth_scale * depth_image_1[y,x]
 
   cv2.imshow('RealSense', depth_colormap_1)
   cv2.imshow('MediaPipe Pose', image)
 
-  if raw_depth_values:
-    filtered_z = hampel_filter(raw_depth_values, depth_z)
-  else:
-    filtered_z = depth_z
-
-  # WARNING: only append to values after filtering!
-  raw_depth_values.append(depth_z)
-
-  depth_values.append(filtered_z) # TODO necessary?
-
-  # Draw the depth value over time
-  plt.title("Depth over time")
-  plt.scatter(current_frame, depth_z, c='b')
-  plt.scatter(current_frame, filtered_z, c='r')
-
-  # Draw the skeleton over time
-  #ax.cla()
-  #ax.scatter(x, y, filtered_z, c='r')
-  #for joint_name, joint_position in joint_positions.items():
-    #x, y, z = joint_position
-    #ax.scatter(x, y, z, c='r')
-
   for i, bone in enumerate(bone_list):
-    x1, y1, z1 = joint_positions[bone[0]]
-    x2, y2, z2 = joint_positions[bone[1]]
+    x1, y1, z1 = raw_joint_positions[bone[0]]
+    x2, y2, z2 = raw_joint_positions[bone[1]]
     bones[i] = [x1, y1, z1, x2, y2, z2]
 
-  return x, y, depth_z, filtered_z, joint_positions, bones
+  return raw_joint_positions, filtered_joint_positions, bones
