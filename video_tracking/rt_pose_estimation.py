@@ -27,17 +27,16 @@ additional_landmarks_list = [mp_pose.PoseLandmark.NOSE, mp_pose.PoseLandmark.RIG
 
 landmarks_list += additional_landmarks_list
 
-raw_depth_values = {landmark: [] for landmark in landmarks_list}
-filtered_depth_values = {landmark: [] for landmark in landmarks_list}
+raw_x_values = {landmark: [] for landmark in landmarks_list}
+filtered_x_values = {landmark: [] for landmark in landmarks_list}
+raw_y_values = {landmark: [] for landmark in landmarks_list}
+filtered_y_values = {landmark: [] for landmark in landmarks_list}
+raw_z_values = {landmark: [] for landmark in landmarks_list}
+filtered_z_values = {landmark: [] for landmark in landmarks_list}
 
-raw_x_values = []
-raw_y_values = []
-
-#fig = plt.figure()
-#ax = fig.add_subplot(projection='3d')
-#ax.set_title("Skeleton of patient")
-
-z_filter = lambda raw_depth_values, current_z: hampel_filter(raw_depth_values, current_z)
+x_filter = lambda raw_x_values, current_x: hampel_filter(raw_x_values, current_x)
+y_filter = lambda raw_y_values, current_y: hampel_filter(raw_y_values, current_y)
+z_filter = lambda raw_z_values, current_z: hampel_filter(raw_z_values, current_z)
 
 # Bones:
 # left_shoulder - right_shoulder
@@ -77,22 +76,42 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
       coord = results.pose_landmarks.landmark[landmark]
       x = min(int(coord.x * image_width), 640-1)
       y = min(int(coord.y * image_height), 480-1)
-      depth_z = depth_scale * depth_image_1[y,x]
-      landmarks_coord.append([current_frame,landmark,coord.x * image_width,coord.y * image_height,coord.z,depth_z])
+      z = depth_scale * depth_image_1[y,x]
+      landmarks_coord.append([current_frame, landmark,coord.x * image_width,coord.y * image_height, coord.z, z])
 
-      raw_joint_positions[landmark] = [x, y, depth_z]
+      raw_joint_positions[landmark] = [x, y, z]
 
-      if raw_depth_values[landmark]:
-        filtered_z = z_filter(raw_depth_values[landmark], depth_z)
+      if raw_x_values[landmark]:
+        filtered_x = x_filter(raw_x_values[landmark], x)
       else:
-        filtered_z = depth_z
-
-      filtered_joint_positions[landmark] = [x, y, filtered_z]
+        filtered_x = x
 
       # WARNING: only append to values after filtering!
-      raw_depth_values[landmark].append(depth_z)
+      raw_x_values[landmark].append(x)
 
-      filtered_depth_values[landmark].append(filtered_z) # TODO necessary?
+      filtered_x_values[landmark].append(filtered_x) # TODO necessary?
+
+      if raw_y_values[landmark]:
+        filtered_y = y_filter(raw_y_values[landmark], y)
+      else:
+        filtered_y = y
+
+      # WARNING: only append to values after filtering!
+      raw_y_values[landmark].append(y)
+
+      filtered_y_values[landmark].append(filtered_y) # TODO necessary?
+
+      if raw_z_values[landmark]:
+        filtered_z = z_filter(raw_z_values[landmark], z)
+      else:
+        filtered_z = z
+
+      # WARNING: only append to values after filtering!
+      raw_z_values[landmark].append(z)
+
+      filtered_z_values[landmark].append(filtered_z) # TODO necessary?
+
+      filtered_joint_positions[landmark] = [filtered_x, filtered_y, filtered_z]
 
   mp_drawing.draw_landmarks(
       image,
@@ -107,8 +126,8 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   cv2.imshow('MediaPipe Pose', image)
 
   for i, bone in enumerate(bone_list):
-    x1, y1, z1 = raw_joint_positions[bone[0]]
-    x2, y2, z2 = raw_joint_positions[bone[1]]
+    x1, y1, z1 = filtered_joint_positions[bone[0]]
+    x2, y2, z2 = filtered_joint_positions[bone[1]]
     bones[i] = [x1, y1, z1, x2, y2, z2]
 
   return raw_joint_positions, filtered_joint_positions, bones

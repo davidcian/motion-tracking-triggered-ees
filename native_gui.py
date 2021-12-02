@@ -164,9 +164,9 @@ class MyWidget(QtWidgets.QWidget):
 
     ###
 
-    pos = np.empty([len(raw_joint_positions), 3])
+    pos = np.empty([len(filtered_joint_positions), 3])
     idx = 0
-    for joint_name, joint_position in raw_joint_positions.items():
+    for joint_name, joint_position in filtered_joint_positions.items():
       pos[idx, 0] = joint_position[0]
       pos[idx, 1] = joint_position[1]
       pos[idx, 2] = joint_position[2]
