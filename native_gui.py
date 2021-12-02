@@ -114,13 +114,18 @@ class MyWidget(QtWidgets.QWidget):
     g = gl.GLGridItem()
     w.addItem(g)
 
-    # Bone drawing
-    self.bone_item_positions = []
-    self.bone_items = []
+    # Raw and filtered data bone drawing
+    self.raw_bone_item_positions = []
+    self.raw_bone_items = []
+    self.filtered_bone_item_positions = []
+    self.filtered_bone_items = []
     for i in range(len(bone_list)):
-      self.bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
-      self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
-      w.addItem(self.bone_items[i])
+      self.raw_bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
+      self.raw_bone_items.append(gl.GLLinePlotItem(pos=self.raw_bone_item_positions[i], width=1))
+      self.filtered_bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
+      self.filtered_bone_items.append(gl.GLLinePlotItem(pos=self.filtered_bone_item_positions[i], width=1))
+      w.addItem(self.raw_bone_items[i])
+      w.addItem(self.filtered_bone_items[i])
 
     w.addItem(self.sp2)
 
@@ -193,11 +198,21 @@ class MyWidget(QtWidgets.QWidget):
 
     self.sp2.setData(pos=all_pos, color=all_color)
 
-    # Plot raw data bones
+    ###
+
+    raw_bone_color = [1.0, 0, 0, 1.0]
+    filtered_bone_color = [0, 1.0, 0, 1.0]
+
+    # Plot raw (red) and filtered data (blue) data bones
+    for i, bone in enumerate(raw_bones):
+      x1, y1, z1, x2, y2, z2 = bone
+      self.raw_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
+      self.raw_bone_items[i].setData(pos=self.raw_bone_item_positions[i], color=raw_bone_color)
+
     for i, bone in enumerate(filtered_bones):
       x1, y1, z1, x2, y2, z2 = bone
-      self.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
-      self.bone_items[i].setData(pos=self.bone_item_positions[i])
+      self.filtered_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
+      self.filtered_bone_items[i].setData(pos=self.filtered_bone_item_positions[i], color=filtered_bone_color)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
