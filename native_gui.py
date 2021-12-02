@@ -34,10 +34,7 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget = pg.PlotWidget()
 
     self.frame_indices = []
-    self.x_val = []
-    self.y_val = []
-    self.z_val = []
-    self.filtered_z_val = []
+    self.features_vals = {'x_val': [], 'y_val': [], 'z_val': [], 'filtered_z_val': []}
 
     self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
     self.graphWidget.setLabel('left', "Coordinate value")
@@ -45,10 +42,18 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget.setBackground('w')
     self.graphWidget.addLegend()
 
+    self.visible_features = ['z_val', 'filtered_z_val']
+
+    self.feature_pens = {'z_val': pen1, 'filtered_z_val': pen2}
+
     #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
     #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
-    self.z_line_ref = self.graphWidget.plot(self.frame_indices, self.z_val, name='Z', pen=pen3)
-    self.filtered_z_line_ref = self.graphWidget.plot(self.frame_indices, self.filtered_z_val, name='Filtered Z', pen=pen1)
+
+    self.visible_line_refs = {}
+
+    for visible_feature_name in self.visible_features:
+      self.visible_line_refs[visible_feature_name] = self.graphWidget.plot(self.frame_indices, self.features_vals[visible_feature_name],
+        name=visible_feature_name, pen=self.feature_pens[visible_feature_name])
 
     self.layout = QtWidgets.QVBoxLayout(self)
     
@@ -62,18 +67,17 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.layout.addWidget(self.show_y_button)
     self.layout.addWidget(self.show_z_button)
 
-  def update(self, frame_indices, x, y, z, filtered_z):
+  def update(self, frame_indices, features_update):
     self.frame_indices = frame_indices
 
-    self.x_val.append(x)
-    self.y_val.append(y)
-    self.z_val.append(z)
-    self.filtered_z_val.append(filtered_z)
+    for feature_name, feature_val in features_update.items():
+      self.features_vals[feature_name].append(feature_val)
+
+    for visible_feature_name in self.visible_features:
+      self.visible_line_refs[visible_feature_name].setData(self.frame_indices, self.features_vals[visible_feature_name])
 
     #self.x_line_ref.setData(self.frame_indices, self.x_val)
     #self.y_line_ref.setData(self.frame_indices, self.y_val)
-    self.z_line_ref.setData(self.frame_indices, self.z_val)
-    self.filtered_z_line_ref.setData(self.frame_indices, self.filtered_z_val)
 
   @Slot()
   def show_x_coordinate_plot(self):
@@ -168,7 +172,8 @@ class MyWidget(QtWidgets.QWidget):
     x, y, z = raw_joint_positions[selected_joint]
     filtered_x, filtered_y, filtered_z = filtered_joint_positions[selected_joint]
 
-    self.coordinate_plot_widget.update(self.frame_indices, x, y, z, filtered_z)
+    features_update = {'x_val': x, 'y_val': y, 'z_val': z, 'filtered_z_val': filtered_z}
+    self.coordinate_plot_widget.update(self.frame_indices, features_update)
 
     ###
 
