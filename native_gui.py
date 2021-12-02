@@ -152,6 +152,7 @@ class MyWidget(QtWidgets.QWidget):
     depth_frame_1 = frames_1.get_depth_frame()
     color_frame_1 = frames_1.get_color_frame()
 
+    # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None

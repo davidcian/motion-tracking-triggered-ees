@@ -73,6 +73,9 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   image_height, image_width, _ = image.shape
   results = pose.process(image)
 
+  if results.pose_landmarks.landmark == None:
+    print("No pose found, check if someone is in the camera field!")
+
   for landmark in landmarks_list:
       coord = results.pose_landmarks.landmark[landmark]
       x = min(int(coord.x * image_width), 640-1)
