@@ -1,4 +1,4 @@
-def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, k=1.4826, n_accepted_stds=3):
+def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, k=1.4826, n_accepted_stds=3, replacement='median'):
   #print("Prev values", prev_values)
   #print("Current value", current_value)
   all_values = prev_values + [current_value]
@@ -22,4 +22,9 @@ def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, 
 
   #print("Current value {} Median value {}".format(current_value, window_median))
 
-  return window_median if abs(current_value - window_median) > n_accepted_stds * est_std else current_value
+  if replacement == 'median':
+    replacement_value = window_median
+  else:
+    replacement_value = 0
+
+  return replacement_value if abs(current_value - window_median) > n_accepted_stds * est_std else current_value
