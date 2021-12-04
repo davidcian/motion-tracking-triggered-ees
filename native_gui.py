@@ -221,18 +221,14 @@ class MyWidget(QtWidgets.QWidget):
     raw_color = np.array([raw_joint_color for _ in range(len(raw_joint_positions))])
     idx = 0
     for joint_name, joint_position in raw_joint_positions.items():
-      raw_pos[idx, 0] = joint_position[0]
-      raw_pos[idx, 1] = joint_position[1]
-      raw_pos[idx, 2] = joint_position[2]
+      raw_pos[idx] = joint_position
       idx += 1
 
     filtered_pos = np.empty([len(filtered_joint_positions), 3])
     filtered_color = np.array([filtered_joint_color for _ in range(len(filtered_joint_positions))])
     idx = 0
     for joint_name, joint_position in filtered_joint_positions.items():
-      filtered_pos[idx, 0] = joint_position[0]
-      filtered_pos[idx, 1] = joint_position[1]
-      filtered_pos[idx, 2] = joint_position[2]
+      filtered_pos[idx] = joint_position
       idx += 1
 
     all_pos = np.vstack([raw_pos, filtered_pos])
