@@ -54,6 +54,64 @@ for i=1:7
         'Fs', mat2cell(cfg.Fs(1, EMG_idx), 1, nb_EMG));
 end
 
+%% New preprocessing pipeline - Rectification
+
+% Remove mean to each signal (mean) and rectify
+for i=1:nb_EMG
+    % MVC
+    MVC_EMG.DataRect{1,i} = abs(MVC_EMG.Data{1,i} - mean(MVC_EMG.Data{1,i}));
+    
+    % Configurations
+    for j=1:length(configs_EMG)
+        configs_EMG(j).DataRect{1,i} = abs(configs_EMG(j).Data{1,i} - ...
+            mean (configs_EMG(j).Data{1,i}));
+    end
+end
+
+%% New preprocessing pipeline - Smoothing
+% Set parameters
+fc = 100;
+order = 4;
+muscle_MVC = zeros(1, length(baseline_EMG.Data));
+
+for i=1:nb_EMG
+    % Prepare butterworth and window size
+    % 300ms window for moving rms
+    win = round(300e-3 * MVC_EMG.Fs(i));
+    % Set butterworth filter
+    Wn = fc / (MVC_EMG.Fs(i)/2);
+    [b, a] = butter(order, Wn);
+
+    % MVC
+    MVC_EMG.butter{1,i} = filtfilt(b1, a1, MVC_EMG.DataRect{1,i});
+    MVC_EMG.movRMS{1,i} = fastrms(MVC_EMG.butter{1,i}, win);
+
+    muscle_MVC(i) = max(MVC_EMG.movRMS{1,i});
+    
+    % Configurations
+    for j=1:length(configs_EMG)
+        configs_EMG(j).butter{1,i} = ...
+            filtfilt(b, a, configs_EMG(j).DataRect{1,i});
+        configs_EMG(j).movRMS{1,i} = ...
+            fastrms(configs_EMG(j).butter{1,i}, win);
+    end
+end
+
+% for i=1:nb_EMG
+%     figure; hold on
+%     plot(MVC_EMG.Time{1,i}, MVC_EMG.DataRect{1,i})
+%     plot(MVC_EMG.Time{1,i}, MVC_EMG.butter{1,i})
+%     plot(MVC_EMG.Time{1,i}, MVC_EMG.movRMS{1,i})
+% end
+
+%% New preprocessing pipeline - Normalization
+
+for i=1:length(configs_EMG)
+    for j=1:nb_EMG
+        configs_EMG(i).movRMS{1,j} = ...
+            fastrms(configs_EMG(i).butter{1,j}, win) / muscle_MVC(j);
+    end
+end
 
 %% Apply preprocessing to the whole dataset
 
@@ -68,27 +126,46 @@ for i=1:nb_EMG
     Wn = fc / (baseline_EMG.Fs(i)/2);
     [b, a] = butter(order, Wn);
 
-%     figure; hold on;
-%     plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Data{1,i}))
     % Baseline preprocessing
-    baseline_EMG.DataBis{1,i} = filter(b, a, baseline_EMG.Data{1,i});
-%     plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Data{1,i}))
+    %baseline_EMG.DataBis{1,i} = filtfilt(b, a, abs(baseline_EMG.Data{1,i} - mean(baseline_EMG.Data{1,i})));
+    baseline_EMG.DataBis{1,i} = filtfilt(b, a, baseline_EMG.Data{1,i});
     baseline_EMG.Envelope{1,i} = fastrms(baseline_EMG.DataBis{1,i}, win);
-%     plot(baseline_EMG.Time{1,i}, baseline_EMG.Data{1,i})
 
     % MVC preprocessing
-    MVC_EMG.DataBis{1,i} = filter(b, a, MVC_EMG.Data{1,i});
+    MVC_EMG.DataBis{1,i} = filter(b, a, MVC_EMG.Data{1,i} - mean(MVC_EMG.Data{1,i}));
     MVC_EMG.Envelope{1,i} = fastrms(MVC_EMG.DataBis{1,i}, win);
 
     % Configs preprocessing
     for j=1:length(configs_EMG)
-        configs_EMG(j).DataBis{1,i} = filter(b, a, configs_EMG(j).Data{1,i});
+        configs_EMG(j).DataBis{1,i} = filter(b, a, configs_EMG(j).Data{1,i} - mean (configs_EMG(j).Data{1,i}));
         configs_EMG(j).Envelope{1,i} = fastrms(configs_EMG(j).DataBis{1,i}, win);
     end
 end
 
-% figure;
-% plot(baseline_EMG.Time{1,2}, baseline_EMG.Data{1,2})
+
+% for i=1:nb_EMG
+%     figure; hold on
+%     plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Data{1,i}))
+%     plot(baseline_EMG.Time{1,i}, baseline_EMG.Envelope{1,i})
+% end
+
+% Baseline
+% figure; hold on
+% plot(baseline_EMG.Time{1,2}, abs(baseline_EMG.Data{1,2}))
+% plot(baseline_EMG.Time{1,2}, abs(baseline_EMG.DataBis{1,2}))
+% plot(baseline_EMG.Time{1,2}, baseline_EMG.Envelope{1,2})
+
+% MVC
+% for i=1:nb_EMG
+%     figure
+%     subplot(3,1,1)
+%     plot(MVC_EMG.Time{1,i}, abs(MVC_EMG.Data{1,i} - mean(MVC_EMG.Data{1,i})))
+%     subplot(3,1,2)
+%     plot(MVC_EMG.Time{1,i}, abs(MVC_EMG.DataBis{1,i}))
+%     subplot(3,1,3)
+%     plot(MVC_EMG.Time{1,i}, MVC_EMG.Envelope{1,i})
+%     title(MVC_EMG.Channels(i))
+% end
 
 %% Baseline computation and correction
 
@@ -102,37 +179,47 @@ end
 muscle_baseline = zeros(1, length(baseline_EMG.Data));
 muscle_MVC = zeros(1, length(baseline_EMG.Data));
 
-% Collect baseline for each EMG and correction
+% Baseline correction
 for i=1:nb_EMG
     % Baseline computation
     muscle_baseline(i) = max(baseline_EMG.Envelope{1,i});
-    % MVC correction (also done on raw for visualization)
-    MVC_EMG.Envelope{1,i} = MVC_EMG.Envelope{1,i} - muscle_baseline(i);
-    MVC_EMG.Data{1,i} = MVC_EMG.Data{1,i} - muscle_baseline(i);
-    % MVC computation
-    muscle_MVC(i) = max(MVC_EMG.Envelope{1,i});
 
+    % MVC correction 
+    MVC_EMG.Envelope{1,i} = MVC_EMG.Envelope{1,i} - muscle_baseline(i);
+    
     % Configs correction
     for j=1:length(configs_EMG)
         configs_EMG(j).Envelope{1,i} = (configs_EMG(j).Envelope{1,i} ...
             - muscle_baseline(i)) / muscle_MVC(i);
         % Set neg values to 0
-        configs_EMG(j).Data{1,i} = (configs_EMG(j).Data{1,i} ...
-            - muscle_baseline(i)) / muscle_MVC(i);
         configs_EMG(j).Envelope{1,i}(configs_EMG(j).Envelope{1,i} < 0) = 0;
     end
 end
 
+for i=1:nb_EMG
+    figure; hold on
+    plot(MVC_EMG.Time{1,i}, abs(MVC_EMG.Data{1,i}))
+    plot(MVC_EMG.Time{1,i}, MVC_EMG.Envelope{1,i})
+end
+
+for i=1:nb_EMG
+    figure; hold on
+    plot(configs_EMG(1).Time{1,i}, abs(configs_EMG(1).Data{1,i}))
+    plot(configs_EMG(1).Time{1,i}, configs_EMG(1).Envelope{1,i})
+end
+
+% MVC computation
+% muscle_MVC(i) = max(MVC_EMG.Envelope{1,i});
 %% Visualization
 
 % Plot baseline for each EMG channel (i.e. each muscle)
-figure
-for i=1:nb_EMG
-    subplot(nb_EMG, 1, i)
-    plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Data{1,i}))
-    hold on;
-    plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Envelope{1,i}))
-end
+% figure
+% for i=1:nb_EMG
+%     subplot(nb_EMG, 1, i)
+%     plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Data{1,i}))
+%     hold on;
+%     plot(baseline_EMG.Time{1,i}, abs(baseline_EMG.Envelope{1,i}))
+% end
 
 % Plot MVC for each EMG channel (i.e. each muscle)
 % figure
@@ -179,15 +266,15 @@ for i=1:length(configs)
     perc = zeros(nb_EMG, length(rise_times));
     for j=1:length(rise_times)
         for k=1:nb_EMG
-            [blabla1, t1_idx] = ...
+            [m1, t1_idx] = ...
                 min(abs(configs_EMG(i).Time{1,k} - rise_times(j)));
-            [blabla2, t2_idx] = ...
+            [m2, t2_idx] = ...
                 min(abs(configs_EMG(i).Time{1,k} - fall_times(j)));
             
-            useful_signal = configs_EMG(i).Data{1,k}(t1_idx:t2_idx);
-            perc(k, j) = 100 * mean(useful_signal(useful_signal>activity_threshold));
+%             useful_signal = configs_EMG(i).Data{1,k}(t1_idx:t2_idx);
+%             perc(k, j) = 100 * mean(useful_signal(useful_signal>activity_threshold));
             
-            %perc(k, j) = 100 * max(configs_EMG(i).Data{1,k}(t1_idx:t2_idx));
+            perc(k, j) = 100 * max(configs_EMG(i).Envelope{1,k}(t1_idx:t2_idx));
         end
     end
     rowDist = ones(1, nb_EMG);
