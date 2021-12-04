@@ -5,6 +5,8 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtWidgets import QPushButton, QComboBox
 from PySide6.QtCore import Slot
 
+from PySide6.QtGui import QVector3D
+
 import pyrealsense2 as rs
 
 import pyqtgraph as pg
@@ -143,8 +145,14 @@ class MyWidget(QtWidgets.QWidget):
     self.pos = np.array([1, 1, 3])
     self.sp2 = gl.GLScatterPlotItem(pos=self.pos)
 
-    g = gl.GLGridItem()
+    # Draw a grid as the floor
+    g = gl.GLGridItem(size=QVector3D(1000, 1000, 1000))
+    g.setSpacing(spacing=QVector3D(100, 100, 100))
     w.addItem(g)
+
+    # Draw the axes
+    axes = gl.GLAxisItem(size=QVector3D(2000, 2000, 2000))
+    w.addItem(axes)
 
     # Raw and filtered data bone drawing
     self.raw_bone_item_positions = []
