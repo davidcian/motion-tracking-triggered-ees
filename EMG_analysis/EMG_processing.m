@@ -280,3 +280,15 @@ for i=1:nb_EMG_sys2
     figure; hold on;
     plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.DataNorm{1,i})
 end
+
+
+%%
+
+% Find max freq
+% freq_max = max([max(1./diff()), max(1./diff()), max(1./diff())]);
+% new_freq = ceil(freq_max);
+
+% Upsample to same freq
+% [,]=resampleT(,new_freq,);
+% [,]=resampleT(,new_freq,);
+% [,]=resampleT(,new_freq,);
