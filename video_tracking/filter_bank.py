@@ -28,3 +28,6 @@ def hampel_filter(prev_values, current_value, window_size=10, window_offset=-5, 
     replacement_value = 0
 
   return replacement_value if abs(current_value - window_median) > n_accepted_stds * est_std else current_value
+
+def identity_filter(current_value):
+  return current_value

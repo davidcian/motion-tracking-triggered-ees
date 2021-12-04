@@ -5,6 +5,8 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtWidgets import QPushButton, QComboBox
 from PySide6.QtCore import Slot
 
+from PySide6.QtGui import QVector3D
+
 import pyrealsense2 as rs
 
 import pyqtgraph as pg
@@ -46,20 +48,13 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget.addLegend()
 
     # Names of features currently displayed on plot
-    # self.visible_features = ['z_val', 'filtered_z_val']
-    self.visible_features = ['y_val', 'filtered_y_val']
+    self.visible_features = ['x_val', 'filtered_x_val']
 
-    # self.feature_pens = {'z_val': pen1, 'filtered_z_val': pen2}
-    self.feature_pens = {'y_val': pen1, 'filtered_y_val': pen2}
-
-    #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
-    #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
+    self.feature_pens = {'x_val': pen1, 'filtered_x_val': pen2, 'y_val': pen1, 'filtered_y_val': pen2, 'z_val': pen1, 'filtered_z_val': pen2}
 
     self.visible_line_refs = {}
 
-    for visible_feature_name in self.visible_features:
-      self.visible_line_refs[visible_feature_name] = self.graphWidget.plot(self.frame_indices, self.features_vals[visible_feature_name],
-        name=visible_feature_name, pen=self.feature_pens[visible_feature_name])
+    self.draw_visible_lines()
 
     self.layout = QtWidgets.QVBoxLayout(self)
     
@@ -74,6 +69,10 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.show_x_button = QPushButton("Show X coordinate")
     self.show_y_button = QPushButton("Show Y coordinate")
     self.show_z_button = QPushButton("Show Z coordinate")
+
+    self.show_x_button.clicked.connect(self.show_x_coordinate_plot)
+    self.show_y_button.clicked.connect(self.show_y_coordinate_plot)
+    self.show_z_button.clicked.connect(self.show_z_coordinate_plot)
 
     self.layout.addWidget(self.show_x_button)
     self.layout.addWidget(self.show_y_button)
@@ -92,20 +91,35 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     for visible_feature_name in self.visible_features:
       self.visible_line_refs[visible_feature_name].setData(self.frame_indices, self.features_vals[visible_feature_name])
 
-    #self.x_line_ref.setData(self.frame_indices, self.x_val)
-    #self.y_line_ref.setData(self.frame_indices, self.y_val)
-
   @Slot()
   def show_x_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['x_val', 'filtered_x_val']
+    self.draw_visible_lines()
 
   @Slot()
   def show_y_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['y_val', 'filtered_y_val']
+    self.draw_visible_lines()
 
   @Slot()
   def show_z_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['z_val', 'filtered_z_val']
+    self.draw_visible_lines()
+
+  def clear_visible_lines(self):
+    for visible_feature_name in self.visible_features:
+      self.graphWidget.removeItem(self.visible_line_refs[visible_feature_name])
+
+  def draw_visible_lines(self):
+    for visible_feature_name in self.visible_features:
+      if visible_feature_name not in self.visible_line_refs:
+        self.visible_line_refs[visible_feature_name] = pg.PlotDataItem(self.frame_indices, 
+          self.features_vals[visible_feature_name], pen=self.feature_pens[visible_feature_name], name=visible_feature_name)
+
+      self.graphWidget.addItem(self.visible_line_refs[visible_feature_name])
 
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
@@ -131,8 +145,14 @@ class MyWidget(QtWidgets.QWidget):
     self.pos = np.array([1, 1, 3])
     self.sp2 = gl.GLScatterPlotItem(pos=self.pos)
 
-    g = gl.GLGridItem()
+    # Draw a grid as the floor
+    g = gl.GLGridItem(size=QVector3D(1000, 1000, 1000))
+    g.setSpacing(spacing=QVector3D(100, 100, 100))
     w.addItem(g)
+
+    # Draw the axes
+    axes = gl.GLAxisItem(size=QVector3D(2000, 2000, 2000))
+    w.addItem(axes)
 
     # Raw and filtered data bone drawing
     self.raw_bone_item_positions = []
@@ -201,18 +221,17 @@ class MyWidget(QtWidgets.QWidget):
     raw_color = np.array([raw_joint_color for _ in range(len(raw_joint_positions))])
     idx = 0
     for joint_name, joint_position in raw_joint_positions.items():
+      #raw_pos[idx] = joint_position
       raw_pos[idx, 0] = joint_position[0]
-      raw_pos[idx, 1] = joint_position[1]
-      raw_pos[idx, 2] = joint_position[2]
+      raw_pos[idx, 1] = joint_position[2]
+      raw_pos[idx, 2] = joint_position[1]
       idx += 1
 
     filtered_pos = np.empty([len(filtered_joint_positions), 3])
     filtered_color = np.array([filtered_joint_color for _ in range(len(filtered_joint_positions))])
     idx = 0
     for joint_name, joint_position in filtered_joint_positions.items():
-      filtered_pos[idx, 0] = joint_position[0]
-      filtered_pos[idx, 1] = joint_position[1]
-      filtered_pos[idx, 2] = joint_position[2]
+      filtered_pos[idx] = joint_position
       idx += 1
 
     all_pos = np.vstack([raw_pos, filtered_pos])
@@ -227,7 +246,7 @@ class MyWidget(QtWidgets.QWidget):
 
     # Plot raw (red) and filtered data (blue) data bones
     for i, bone in enumerate(raw_bones):
-      x1, y1, z1, x2, y2, z2 = bone
+      x1, z1, y1, x2, z2, y2 = bone
       self.raw_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
       self.raw_bone_items[i].setData(pos=self.raw_bone_item_positions[i], color=raw_bone_color)
 
