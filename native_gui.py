@@ -46,20 +46,13 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.graphWidget.addLegend()
 
     # Names of features currently displayed on plot
-    # self.visible_features = ['z_val', 'filtered_z_val']
-    self.visible_features = ['y_val', 'filtered_y_val']
+    self.visible_features = ['x_val', 'filtered_x_val']
 
-    # self.feature_pens = {'z_val': pen1, 'filtered_z_val': pen2}
-    self.feature_pens = {'y_val': pen1, 'filtered_y_val': pen2}
-
-    #self.x_line_ref = self.graphWidget.plot(self.frame_indices, self.x_val, name='X', pen=pen1)
-    #self.y_line_ref = self.graphWidget.plot(self.frame_indices, self.y_val, name='Y', pen=pen2)
+    self.feature_pens = {'x_val': pen1, 'filtered_x_val': pen2, 'y_val': pen1, 'filtered_y_val': pen2, 'z_val': pen1, 'filtered_z_val': pen2}
 
     self.visible_line_refs = {}
 
-    for visible_feature_name in self.visible_features:
-      self.visible_line_refs[visible_feature_name] = self.graphWidget.plot(self.frame_indices, self.features_vals[visible_feature_name],
-        name=visible_feature_name, pen=self.feature_pens[visible_feature_name])
+    self.draw_visible_lines()
 
     self.layout = QtWidgets.QVBoxLayout(self)
     
@@ -74,6 +67,10 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.show_x_button = QPushButton("Show X coordinate")
     self.show_y_button = QPushButton("Show Y coordinate")
     self.show_z_button = QPushButton("Show Z coordinate")
+
+    self.show_x_button.clicked.connect(self.show_x_coordinate_plot)
+    self.show_y_button.clicked.connect(self.show_y_coordinate_plot)
+    self.show_z_button.clicked.connect(self.show_z_coordinate_plot)
 
     self.layout.addWidget(self.show_x_button)
     self.layout.addWidget(self.show_y_button)
@@ -92,20 +89,35 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     for visible_feature_name in self.visible_features:
       self.visible_line_refs[visible_feature_name].setData(self.frame_indices, self.features_vals[visible_feature_name])
 
-    #self.x_line_ref.setData(self.frame_indices, self.x_val)
-    #self.y_line_ref.setData(self.frame_indices, self.y_val)
-
   @Slot()
   def show_x_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['x_val', 'filtered_x_val']
+    self.draw_visible_lines()
 
   @Slot()
   def show_y_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['y_val', 'filtered_y_val']
+    self.draw_visible_lines()
 
   @Slot()
   def show_z_coordinate_plot(self):
-    self.graphWidget.show()
+    self.clear_visible_lines()
+    self.visible_features = ['z_val', 'filtered_z_val']
+    self.draw_visible_lines()
+
+  def clear_visible_lines(self):
+    for visible_feature_name in self.visible_features:
+      self.graphWidget.removeItem(self.visible_line_refs[visible_feature_name])
+
+  def draw_visible_lines(self):
+    for visible_feature_name in self.visible_features:
+      if visible_feature_name not in self.visible_line_refs:
+        self.visible_line_refs[visible_feature_name] = pg.PlotDataItem(self.frame_indices, 
+          self.features_vals[visible_feature_name], pen=self.feature_pens[visible_feature_name], name=visible_feature_name)
+
+      self.graphWidget.addItem(self.visible_line_refs[visible_feature_name])
 
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
