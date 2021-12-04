@@ -221,7 +221,10 @@ class MyWidget(QtWidgets.QWidget):
     raw_color = np.array([raw_joint_color for _ in range(len(raw_joint_positions))])
     idx = 0
     for joint_name, joint_position in raw_joint_positions.items():
-      raw_pos[idx] = joint_position
+      #raw_pos[idx] = joint_position
+      raw_pos[idx, 0] = joint_position[0]
+      raw_pos[idx, 1] = joint_position[2]
+      raw_pos[idx, 2] = joint_position[1]
       idx += 1
 
     filtered_pos = np.empty([len(filtered_joint_positions), 3])
@@ -243,7 +246,7 @@ class MyWidget(QtWidgets.QWidget):
 
     # Plot raw (red) and filtered data (blue) data bones
     for i, bone in enumerate(raw_bones):
-      x1, y1, z1, x2, y2, z2 = bone
+      x1, z1, y1, x2, z2, y2 = bone
       self.raw_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
       self.raw_bone_items[i].setData(pos=self.raw_bone_item_positions[i], color=raw_bone_color)
 
