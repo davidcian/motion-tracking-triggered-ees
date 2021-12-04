@@ -13,7 +13,7 @@ import argparse
 
 import os
 
-from video_tracking.rt_pose_estimation import estimate_pose, bone_list
+from video_tracking.rt_pose_estimation import estimate_pose, bone_list, landmarks_list
 
 import pyqtgraph.opengl as gl
 
@@ -30,6 +30,8 @@ pen3 = pg.mkPen(color='b', width=2)
 class CoordinatePlotWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
+
+    self.selected_joint = mp_pose.PoseLandmark.LEFT_WRIST
 
     self.graphWidget = pg.PlotWidget()
 
@@ -63,6 +65,12 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     
     self.layout.addWidget(self.graphWidget)
 
+    joint_choice_combo = QComboBox(self)
+    for joint in landmarks_list:
+      joint_choice_combo.addItem(str(joint))
+    joint_choice_combo.currentIndexChanged.connect(lambda: self.select_joint(landmarks_list[joint_choice_combo.currentIndex()]))
+    self.layout.addWidget(joint_choice_combo)
+
     self.show_x_button = QPushButton("Show X coordinate")
     self.show_y_button = QPushButton("Show Y coordinate")
     self.show_z_button = QPushButton("Show Z coordinate")
@@ -70,6 +78,10 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
     self.layout.addWidget(self.show_x_button)
     self.layout.addWidget(self.show_y_button)
     self.layout.addWidget(self.show_z_button)
+
+  @Slot()
+  def select_joint(self, joint):
+    self.selected_joint = joint
 
   def update(self, frame_indices, features_update):
     self.frame_indices = frame_indices
@@ -150,10 +162,6 @@ class MyWidget(QtWidgets.QWidget):
     show_coordinate_plot_button.clicked.connect(self.show_coordinate_plots)
     self.layout.addWidget(show_coordinate_plot_button)
 
-    joint_choice_combo = QComboBox(self)
-    joint_choice_combo.addItem('Joint 1')
-    self.layout.addWidget(joint_choice_combo)
-
   @Slot()
   def show_coordinate_plots(self):
     self.coordinate_plot_widget.show()
@@ -175,7 +183,7 @@ class MyWidget(QtWidgets.QWidget):
     #self.frame_indices.append(self.frame_indices[-1] + 1)
     self.frame_indices.append(self.current_frame)
 
-    selected_joint = mp_pose.PoseLandmark.LEFT_WRIST
+    selected_joint = self.coordinate_plot_widget.selected_joint
 
     x, y, z = raw_joint_positions[selected_joint]
     filtered_x, filtered_y, filtered_z = filtered_joint_positions[selected_joint]
