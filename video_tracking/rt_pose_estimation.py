@@ -5,7 +5,7 @@ import av
 import numpy as np
 import matplotlib.pyplot as plt
 
-from video_tracking.filter_bank import hampel_filter
+from video_tracking.filter_bank import hampel_filter, identity_filter
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -34,8 +34,10 @@ filtered_y_values = {landmark: [] for landmark in landmarks_list}
 raw_z_values = {landmark: [] for landmark in landmarks_list}
 filtered_z_values = {landmark: [] for landmark in landmarks_list}
 
-x_filter = lambda raw_x_values, current_x: hampel_filter(raw_x_values, current_x)
-y_filter = lambda raw_y_values, current_y: hampel_filter(raw_y_values, current_y)
+#x_filter = lambda raw_x_values, current_x: hampel_filter(raw_x_values, current_x)
+#y_filter = lambda raw_y_values, current_y: hampel_filter(raw_y_values, current_y)
+x_filter = lambda raw_x_values, current_x: identity_filter(current_x)
+y_filter = lambda raw_y_values, current_y: identity_filter(current_y)
 z_filter = lambda raw_z_values, current_z: hampel_filter(raw_z_values, current_z, window_size=20, window_offset=-10)
 
 # Bones:
@@ -77,11 +79,13 @@ def estimate_pose(pose, color_frame, depth_frame, depth_scale, current_frame):
   if results.pose_landmarks == None:
     print("No pose found, check if someone is in the camera field!")
 
+  screen_depth_scale = 100
+
   for landmark in landmarks_list:
       coord = results.pose_landmarks.landmark[landmark]
       x = min(int(coord.x * image_width), 640-1)
       y = min(int(coord.y * image_height), 480-1)
-      z = depth_scale * depth_image_1[y,x]
+      z = screen_depth_scale * depth_scale * depth_image_1[y,x]
       landmarks_coord.append([current_frame, landmark,coord.x * image_width,coord.y * image_height, coord.z, z])
 
       raw_joint_positions[landmark] = [x, y, z]

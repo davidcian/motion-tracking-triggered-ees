@@ -1,0 +1,11 @@
+PathFileType	4	(X/Y/Z)	traj.trc
+DataRate	CameraRate	NumFrames	NumMarkers	Units	OrigDataRate	OrigDataStartFrame	OrigNumFrames
+30.00	30.00	5	1	mm	30.00	1	5
+Frame#	Time	wrist		
+		X1	Y1	Z1
+
+0	0.0	603.125	431.25	0.0
+1	0.25	603.125	431.25	0.0
+2	0.5	581.70166015625	449.04785156250006	21.09375
+3	0.75	522.1923828125	498.486328125	79.6875
+4	1.0	462.68310546875	547.9248046875	138.28125
