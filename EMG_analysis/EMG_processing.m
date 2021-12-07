@@ -1,7 +1,6 @@
 clear all
 close all
 
-
 %% Data loading
 
 % Dataset names
@@ -23,6 +22,8 @@ fname_day3(4) = "data/Day 3/config12freq10.mat";
 
 fname_sys1 = "data/EMG healthy participant/System_EMG_1.mat";
 fname_sys2 = "data/EMG healthy participant/System_EMG_2.mat";
+
+fname_alex = "data/Alex.mat";
 
 % Set indices of the different sensors
 EMG_idx_day1 = [1, 2, 3, 4, 5, 12, 19, 26, 33, 40, 47, 54, 61, 68, 75, 82];
@@ -93,12 +94,15 @@ cfgs_EMG_sys1 = struct('Channels', Channels_sys1, ...
     'Fs', mat2cell(cfg.Fs(1, EMG_idx_sys1), 1, length(EMG_idx_sys1)));
 
 % Load sys2
-
 cfg = load(fname_sys2);
 cfgs_EMG_sys2 = struct('Channels', Channels_sys2, ...
     'Data', mat2cell(cfg.Data(1, EMG_idx_sys2), 1, length(EMG_idx_sys2)), ...
     'Time', mat2cell(cfg.Time(1, EMG_idx_sys2), 1, length(EMG_idx_sys2)), ...
     'Fs', mat2cell(cfg.Fs(1, EMG_idx_sys2), 1, length(EMG_idx_sys2)));
+
+% Load alex data
+load(fname_alex); % var name : ALExkinematics
+alex = table2array(ALExkinematics);
 
 %% Synchro
 
@@ -239,21 +243,21 @@ for i=1:nb_EMG_sys2
         fastrms(cfgs_EMG_sys2.butter{1,i}, win);
 end
 
-%% 
+%% Envelope visualization 
 
-for i=1:nb_EMG_sys1
-    figure; hold on;
-    plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.DataRect{1,i})
-    plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.movRMS{1,i})
-end
+% for i=1:nb_EMG_sys1
+%     figure; hold on;
+%     plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.DataRect{1,i})
+%     plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.movRMS{1,i})
+% end
+% 
+% for i=1:nb_EMG_sys2
+%     figure; hold on;
+%     plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.DataRect{1,i})
+%     plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.movRMS{1,i})
+% end
 
-for i=1:nb_EMG_sys2
-    figure; hold on;
-    plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.DataRect{1,i})
-    plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.movRMS{1,i})
-end
-
-%%
+%% Normalization
 
 max_sys1 = zeros([1, nb_EMG_sys1]);
 for i=1:nb_EMG_sys1
@@ -269,26 +273,62 @@ for i=1:nb_EMG_sys2
     cfgs_EMG_sys2.DataNorm{1,i} = cfgs_EMG_sys2.movRMS{1,i} / max_sys2(i);
 end
 
-%%
+%% Normalized visualization
+
+% for i=1:nb_EMG_sys1
+%     figure; hold on;
+%     plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.DataNorm{1,i})
+% end
+% 
+% for i=1:nb_EMG_sys2
+%     figure; hold on;
+%     plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.DataNorm{1,i})
+% end
+
+
+%% Upsampling
+
+% Find max freq
+freq_max = max([max(1./diff(ALExkinematics.timer)), cfgs_EMG_sys1.Fs(8), ...
+    cfgs_EMG_sys1.Fs(9)]);
+new_freq = ceil(freq_max);
 
 for i=1:nb_EMG_sys1
-    figure; hold on;
-    plot(cfgs_EMG_sys1.Time{1,i}, cfgs_EMG_sys1.DataNorm{1,i})
+    [cfgs_EMG_sys1.DataNormUp{1,i}, cfgs_EMG_sys1.TimeUp{1,i}] = ... 
+        resampleT(cfgs_EMG_sys1.DataNorm{1,i}, new_freq, cfgs_EMG_sys1.Time{1,i});
 end
 
 for i=1:nb_EMG_sys2
-    figure; hold on;
-    plot(cfgs_EMG_sys2.Time{1,i}, cfgs_EMG_sys2.DataNorm{1,i})
+    [cfgs_EMG_sys2.DataNormUp{1,i}, cfgs_EMG_sys2.TimeUp{1,i}] = ... 
+        resampleT(cfgs_EMG_sys2.DataNorm{1,i}, new_freq, cfgs_EMG_sys2.Time{1,i});
 end
 
-
-%%
-
-% Find max freq
-% freq_max = max([max(1./diff()), max(1./diff()), max(1./diff())]);
-% new_freq = ceil(freq_max);
+alex(:,1) = alex(:,1) - alex(1,1);
+[x, t] = resampleT(alex(:,1), new_freq, alex(:,1));
+alex_up = zeros(length(x), 9);
+for i=2:9
+    [alex_up(:,i), ~] = resampleT(alex(:,i), new_freq, alex(:,1));
+end
 
 % Upsample to same freq
 % [,]=resampleT(,new_freq,);
 % [,]=resampleT(,new_freq,);
 % [,]=resampleT(,new_freq,);
+
+%% Write in files
+
+shortest_len = length(alex_up);
+csvwrite('data/alex.csv', alex_up(:, 2:end));
+
+sys1 = zeros(shortest_len, nb_EMG_sys1);
+for i=1:nb_EMG_sys1 
+    sys1(:, i) = cfgs_EMG_sys1.DataNormUp{1,i}(1:shortest_len);
+end
+csvwrite('data/sys1.csv', sys1);
+
+sys2 = zeros(shortest_len, nb_EMG_sys2);
+for i=1:nb_EMG_sys2 
+    sys2(:, i) = cfgs_EMG_sys2.DataNormUp{1,i}(1:shortest_len);
+end
+csvwrite('data/sys2.csv', sys2);
+
