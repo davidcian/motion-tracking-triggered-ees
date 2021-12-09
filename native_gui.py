@@ -161,6 +161,8 @@ class MyWidget(QtWidgets.QWidget):
 
     self.layout = QtWidgets.QVBoxLayout(self)
 
+    self.skeletons = {'raw': ([], []), 'filtered': ([], [])}
+
     ###
 
     w = gl.GLViewWidget()
@@ -225,6 +227,8 @@ class MyWidget(QtWidgets.QWidget):
 
     # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    self.skeletons['raw'] = (raw_joint_positions, raw_bones)
+    self.skeletons['filtered'] = (filtered_joint_positions, filtered_bones)
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
 
@@ -248,32 +252,28 @@ class MyWidget(QtWidgets.QWidget):
     raw_joint_color = [1.0, 0, 0, 1.0]
     filtered_joint_color = [0, 1.0, 0, 1.0]
 
-    raw_pos = np.empty([len(raw_joint_positions), 3])
-    raw_color = np.array([raw_joint_color for _ in range(len(raw_joint_positions))])
-    idx = 0
-    for joint_name, joint_position in raw_joint_positions.items():
-      #raw_pos[idx] = joint_position
-      raw_pos[idx, 0] = joint_position[0]
-      raw_pos[idx, 1] = joint_position[2]
-      raw_pos[idx, 2] = joint_position[1]
-      raw_pos[idx, 2] = -raw_pos[idx, 2]
-      raw_pos[idx, 2] += 400
-      idx += 1
+    skeletons_pos = []
+    skeletons_color = []
 
-    filtered_pos = np.empty([len(filtered_joint_positions), 3])
-    filtered_color = np.array([filtered_joint_color for _ in range(len(filtered_joint_positions))])
-    idx = 0
-    for joint_name, joint_position in filtered_joint_positions.items():
-      #filtered_pos[idx] = joint_position
-      filtered_pos[idx, 0] = joint_position[0]
-      filtered_pos[idx, 1] = joint_position[2]
-      filtered_pos[idx, 2] = joint_position[1]
-      filtered_pos[idx, 2] = -filtered_pos[idx, 2]
-      filtered_pos[idx, 2] += 400
-      idx += 1
+    for skeleton in self.skeletons:
+      joint_positions = skeleton[0]
+      pos = np.empty([len(joint_positions), 3])
+      color = np.array([raw_joint_color for _ in range(len(joint_positions))]) # TODO fix color here
+      idx = 0
+      for joint_name, joint_position in joint_positions.items():
+        #raw_pos[idx] = joint_position
+        pos[idx, 0] = joint_position[0]
+        pos[idx, 1] = joint_position[2]
+        pos[idx, 2] = joint_position[1]
+        pos[idx, 2] = -pos[idx, 2]
+        pos[idx, 2] += 400
+        idx += 1
 
-    all_pos = np.vstack([raw_pos, filtered_pos])
-    all_color = np.vstack([raw_color, filtered_color])
+      skeletons_pos.append(pos)
+      skeletons_color.append(color)
+
+    all_pos = np.vstack(skeletons_pos)
+    all_color = np.vstack(skeletons_color)
 
     self.sp2.setData(pos=all_pos, color=all_color)
 
