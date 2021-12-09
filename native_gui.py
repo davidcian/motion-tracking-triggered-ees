@@ -121,6 +121,18 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
 
       self.graphWidget.addItem(self.visible_line_refs[visible_feature_name])
 
+class ImplantWidget(QtWidgets.QWidget):
+  def __init__(self):
+    super().__init__()
+
+    #self.pixmap = QtGui.QPixmap("graphical_assets/empty-implant-image.png")
+
+  def paintEvent(self, event):
+    painter = QtGui.QPainter(self)
+    pixmap = QtGui.QPixmap("empty-implant-image.png")
+
+    painter.drawPixmap(self.rect(), pixmap)
+
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
     super().__init__()
@@ -131,6 +143,8 @@ class MyWidget(QtWidgets.QWidget):
     self.depth_scale = depth_scale
 
     self.coordinate_plot_widget = CoordinatePlotWidget()
+
+    self.implant_widget = ImplantWidget()
 
     self.current_frame = 0
 
@@ -181,6 +195,14 @@ class MyWidget(QtWidgets.QWidget):
     show_coordinate_plot_button = QPushButton("Show coordinate plots")
     show_coordinate_plot_button.clicked.connect(self.show_coordinate_plots)
     self.layout.addWidget(show_coordinate_plot_button)
+
+    show_implant_widget_button = QPushButton("Show implant stimulation")
+    show_implant_widget_button.clicked.connect(self.show_implant_stimulation)
+    self.layout.addWidget(show_implant_widget_button)
+
+  @Slot()
+  def show_implant_stimulation(self):
+    self.implant_widget.show()
 
   @Slot()
   def show_coordinate_plots(self):
