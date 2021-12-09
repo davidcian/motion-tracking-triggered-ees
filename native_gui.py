@@ -142,6 +142,20 @@ class ImplantWidget(QtWidgets.QWidget):
       #painter.drawPixmap(electrode_location, 10, 10, electrode_pixmap)
       pass
 
+class Skeleton():
+  def __init__(self, joint_color, bone_color):
+    self.joint_positions = []
+    self.bones = []
+    self.joint_color = joint_color
+    self.bone_color = bone_color
+
+    self.bone_item_positions = []
+    self.bone_items = []
+
+    for i in range(len(bone_list)):
+      self.bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
+      self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
+
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
     super().__init__()
@@ -161,7 +175,7 @@ class MyWidget(QtWidgets.QWidget):
 
     self.layout = QtWidgets.QVBoxLayout(self)
 
-    self.skeletons = {'raw': ([], []), 'filtered': ([], [])}
+    self.skeletons = {'raw': Skeleton([1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0]), 'filtered': Skeleton([0, 1.0, 0, 1.0], [0, 1.0, 0, 1.0])}
 
     ###
 
@@ -179,22 +193,14 @@ class MyWidget(QtWidgets.QWidget):
     axes = gl.GLAxisItem(size=QVector3D(2000, 2000, 2000))
     w.addItem(axes)
 
-    # Raw and filtered data bone drawing
-    self.raw_bone_item_positions = []
-    self.raw_bone_items = []
-    self.filtered_bone_item_positions = []
-    self.filtered_bone_items = []
-    for i in range(len(bone_list)):
-      self.raw_bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
-      self.raw_bone_items.append(gl.GLLinePlotItem(pos=self.raw_bone_item_positions[i], width=1))
-      self.filtered_bone_item_positions.append(np.array([[0, 0, 0], [0, 0, 0]]))
-      self.filtered_bone_items.append(gl.GLLinePlotItem(pos=self.filtered_bone_item_positions[i], width=1))
-      w.addItem(self.raw_bone_items[i])
-      w.addItem(self.filtered_bone_items[i])
-
     w.addItem(self.sp2)
 
     ###
+
+    # Draw bones
+    for skeleton in self.skeletons.values():
+      for bone_item in skeleton.bone_items:
+        w.addItem(bone_item)
 
     self.layout.addWidget(w)
 
@@ -227,8 +233,8 @@ class MyWidget(QtWidgets.QWidget):
 
     # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
-    self.skeletons['raw'] = (raw_joint_positions, raw_bones)
-    self.skeletons['filtered'] = (filtered_joint_positions, filtered_bones)
+    self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
+    self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
 
@@ -248,19 +254,14 @@ class MyWidget(QtWidgets.QWidget):
 
     ###
 
-    # Plot raw (red) & filtered data (blue) joints
-    raw_joint_color = [1.0, 0, 0, 1.0]
-    filtered_joint_color = [0, 1.0, 0, 1.0]
-
     skeletons_pos = []
     skeletons_color = []
 
-    for skeleton in self.skeletons:
-      joint_positions = skeleton[0]
-      pos = np.empty([len(joint_positions), 3])
-      color = np.array([raw_joint_color for _ in range(len(joint_positions))]) # TODO fix color here
+    for skeleton in self.skeletons.values():
+      pos = np.empty([len(skeleton.joint_positions), 3])
+      color = np.array([skeleton.joint_color for _ in range(len(skeleton.joint_positions))])
       idx = 0
-      for joint_name, joint_position in joint_positions.items():
+      for joint_name, joint_position in skeleton.joint_positions.items():
         #raw_pos[idx] = joint_position
         pos[idx, 0] = joint_position[0]
         pos[idx, 1] = joint_position[2]
@@ -279,24 +280,14 @@ class MyWidget(QtWidgets.QWidget):
 
     ###
 
-    raw_bone_color = [1.0, 0, 0, 1.0]
-    filtered_bone_color = [0, 1.0, 0, 1.0]
-
-    # Plot raw (red) and filtered data (blue) data bones
-    for i, bone in enumerate(raw_bones):
-      x1, z1, y1, x2, z2, y2 = bone
-      z1, z2 = -z1, -z2
-      #y1, y2 = -y1, -y2
-      z1, z2 = z1 + 400, z2 + 400
-      self.raw_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
-      self.raw_bone_items[i].setData(pos=self.raw_bone_item_positions[i], color=raw_bone_color)
-
-    for i, bone in enumerate(filtered_bones):
-      x1, z1, y1, x2, z2, y2 = bone
-      z1, z2 = -z1, -z2
-      z1, z2 = z1 + 400, z2 + 400
-      self.filtered_bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
-      self.filtered_bone_items[i].setData(pos=self.filtered_bone_item_positions[i], color=filtered_bone_color)
+    for skeleton in self.skeletons.values():
+      # Plot raw (red) and filtered data (blue) data bones
+      for i, bone in enumerate(skeleton.bones):
+        x1, z1, y1, x2, z2, y2 = bone
+        z1, z2 = -z1, -z2
+        z1, z2 = z1 + 400, z2 + 400
+        skeleton.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
+        skeleton.bone_items[i].setData(pos=skeleton.bone_item_positions[i], color=skeleton.bone_color)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
