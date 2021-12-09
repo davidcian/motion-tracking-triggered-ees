@@ -124,6 +124,7 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
 class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
+    self.setGeometry(100, 100, 56, 395)
 
     #self.pixmap = QtGui.QPixmap("graphical_assets/empty-implant-image.png")
 
@@ -132,6 +133,14 @@ class ImplantWidget(QtWidgets.QWidget):
     pixmap = QtGui.QPixmap("empty-implant-image.png")
 
     painter.drawPixmap(self.rect(), pixmap)
+
+    electrode_locations = [(0,0)]
+
+    electrode_pixmap = QtGui.QPixmap("single-electrode-image.png")
+
+    for electrode_location in electrode_locations:
+      #painter.drawPixmap(electrode_location, 10, 10, electrode_pixmap)
+      pass
 
 class MyWidget(QtWidgets.QWidget):
   def __init__(self, pipeline, depth_scale, pose):
