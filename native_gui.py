@@ -23,6 +23,8 @@ import numpy as np
 
 import mediapipe as mp
 
+import csv
+
 mp_pose = mp.solutions.pose
 
 pen1 = pg.mkPen(color='r', width=2)
@@ -297,6 +299,8 @@ if __name__ == '__main__':
   parser.add_argument("-z", "--depth-file")
   parser.add_argument("-w", "--with-depth")
   args = parser.parse_args()
+
+  file = None
 
   try:
     pipeline_1 = rs.pipeline()
