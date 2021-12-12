@@ -158,7 +158,7 @@ class Skeleton():
       self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
 
 class MyWidget(QtWidgets.QWidget):
-  def __init__(self, pipeline, depth_scale, pose):
+  def __init__(self, pose, pipeline=None, depth_scale=None, webcam=None):
     super().__init__()
 
     self.pose = pose
@@ -177,6 +177,8 @@ class MyWidget(QtWidgets.QWidget):
     self.layout = QtWidgets.QVBoxLayout(self)
 
     self.skeletons = {'raw': Skeleton([1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0]), 'filtered': Skeleton([0, 1.0, 0, 1.0], [0, 1.0, 0, 1.0])}
+
+    self.webcam = webcam
 
     ###
 
@@ -226,18 +228,28 @@ class MyWidget(QtWidgets.QWidget):
   def show_coordinate_plots(self):
     self.coordinate_plot_widget.show()
 
+  def retrieve_data(self):
+    if not self.webcam:
+      frames = self.pipeline.wait_for_frames()
+      depth_frame = frames.get_depth_frame()
+      color_frame = frames.get_color_frame()
+
+      depth_image = np.asanyarray(depth_frame.get_data())
+      rgb_image = np.asanyarray(color_frame.get_data())
+    else:
+      ret_val, rgb_image = self.webcam.read()
+      depth_image = np.zeros((rgb_image.shape[0], rgb_image.shape[1]))
+
+    return rgb_image, depth_image
+
   def update_plot_data(self):
-    frames = self.pipeline.wait_for_frames()
-    depth_frame = frames.get_depth_frame()
-    color_frame = frames.get_color_frame()
+    rgb_image, depth_image = self.retrieve_data()
 
-    depth_image = np.asanyarray(depth_frame.get_data())
-    rgb_image = np.asanyarray(color_frame.get_data())
+    if not self.webcam:
+      # Color image of the depth
+      depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
 
-    # Color image of the depth
-    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
-
-    cv2.imshow('RealSense', depth_colormap)
+      cv2.imshow('RealSense', depth_colormap)
 
     # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale, self.current_frame)
@@ -324,19 +336,19 @@ if __name__ == '__main__':
     elif args.source == 'live':
       ctx = rs.context()
       devices = ctx.query_devices()
-      for device in devices:
-        print("Device", device)
       config_1.enable_device(str(devices[0].get_info(rs.camera_info.serial_number)))
       config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    #elif args.source == ''
+    elif args.source == 'webcam':
+      cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
     if args.with_depth == 'true':
       config_1.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
-    # Start streaming from camera
-    profile = pipeline_1.start(config_1)
-    depth_sensor = profile.get_device().first_depth_sensor()
-    depth_scale = depth_sensor.get_depth_scale()
+    if not args.source == 'webcam':
+      # Start streaming from camera
+      profile = pipeline_1.start(config_1)
+      depth_sensor = profile.get_device().first_depth_sensor()
+      depth_scale = depth_sensor.get_depth_scale()
 
     with mp_pose.Pose(static_image_mode=False,
       model_complexity=2,
@@ -345,10 +357,14 @@ if __name__ == '__main__':
 
       app = QtWidgets.QApplication([])
 
-      widget = MyWidget(pipeline_1, depth_scale, pose)
+      if not args.source == 'webcam':
+        widget = MyWidget(pose, pipeline=pipeline_1, depth_scale=depth_scale)
+      else:
+        widget = MyWidget(pose, webcam=cam)
       widget.resize(800, 600)
       widget.show()
 
       sys.exit(app.exec())
   finally:
-    pipeline_1.stop()
+    if not args.source == 'webcam':
+      pipeline_1.stop()

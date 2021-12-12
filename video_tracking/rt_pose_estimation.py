@@ -56,7 +56,7 @@ filtered_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
 raw_joint_positions = {}
 filtered_joint_positions = {}
 
-def estimate_pose(pose, rgb_image, depth_image, depth_scale, current_frame):
+def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
   #frame = frame.reformat(frame.width, frame.height, 'rgb24')
   #image = frame.to_ndarray()
 
