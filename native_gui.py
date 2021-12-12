@@ -25,6 +25,10 @@ import mediapipe as mp
 
 import csv
 
+import cv2
+
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
 pen1 = pg.mkPen(color='r', width=2)
@@ -223,17 +227,32 @@ class MyWidget(QtWidgets.QWidget):
     self.coordinate_plot_widget.show()
 
   def update_plot_data(self):
-    # to be check: right x,y and z
-    frames_1 = self.pipeline.wait_for_frames()
-    depth_frame_1 = frames_1.get_depth_frame()
-    color_frame_1 = frames_1.get_color_frame()
+    frames = self.pipeline.wait_for_frames()
+    depth_frame = frames.get_depth_frame()
+    color_frame = frames.get_color_frame()
+
+    depth_image = np.asanyarray(depth_frame.get_data())
+    rgb_image = np.asanyarray(color_frame.get_data())
+
+    # Color image of the depth
+    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
+
+    cv2.imshow('RealSense', depth_colormap)
 
     # Estimate the pose with MediaPipe
-    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones = estimate_pose(self.pose, color_frame_1, depth_frame_1, self.depth_scale, self.current_frame)
+    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale, self.current_frame)
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
     planned_joint_positions, planned_bones = None, None
     expected_joint_positions, expected_bones = None, None
+
+    mp_drawing.draw_landmarks(
+      rgb_image,
+      results.pose_landmarks,
+      mp_pose.POSE_CONNECTIONS,
+      landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+
+    cv2.imshow('MediaPipe Pose', rgb_image)
 
     self.current_frame += 1
 
@@ -295,8 +314,6 @@ if __name__ == '__main__':
   parser.add_argument("-w", "--with-depth")
   args = parser.parse_args()
 
-  file = None
-
   try:
     pipeline_1 = rs.pipeline()
     config_1 = rs.config()
@@ -307,8 +324,11 @@ if __name__ == '__main__':
     elif args.source == 'live':
       ctx = rs.context()
       devices = ctx.query_devices()
+      for device in devices:
+        print("Device", device)
       config_1.enable_device(str(devices[0].get_info(rs.camera_info.serial_number)))
       config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    #elif args.source == ''
 
     if args.with_depth == 'true':
       config_1.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
