@@ -131,6 +131,8 @@ class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
 
+    active_electrodes = [0, 5]
+
     electrode_positions = [(23, 12), (6, 40), (40, 40), 
       (23, 67), (6, 96), (40, 96),
       (23, 123), (6, 153), (40, 153),
@@ -147,7 +149,8 @@ class ImplantWidget(QtWidgets.QWidget):
 
     self.electrode_res = QtGui.QPixmap("single-electrode-image-red.png")
 
-    for electrode_pos in electrode_positions:
+    for active_electrode_idx in active_electrodes:
+      electrode_pos = electrode_positions[active_electrode_idx]
       self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res, self.empty_implant_pixmap)
       self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
 
