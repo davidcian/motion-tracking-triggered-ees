@@ -1,13 +1,14 @@
 import numpy as np
 import time
 import os
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 from osim_env_main.opensim_environment import *
 from osim_env_main.osim_model import *
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Slot
+import pyqtgraph as pg
 
 def calculate_angle(a, b, c):
   a = np.array(a)  # First
@@ -45,7 +46,7 @@ def path_planning(wrist_pos_i, wrist_pos_f):
 
   if inv_kin:  # perform Inverse Kinematics with OpenSim
     # OpenSim model
-    osim_model = 'models/full_arm_wrist.osim'
+    osim_model = 'D:\motion-tracking-triggered-ees\osim_env_main\models\\full_arm_wrist.osim'
     # lock/unlock model coordinates
     # coords = ['elbow_flexion'] 'shoulder_rot'
     # coords = ['shoulder_elev', 'elv_angle', 'pro_sup','deviation', 'flexion', 'wrist_hand_r1', 'wrist_hand_r3'] # enlever elbow flex pour exo car cette coordonnee pas être blockée si true en dessous
