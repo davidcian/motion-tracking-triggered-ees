@@ -131,7 +131,6 @@ class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
 
-    # Vertical 55/56, horizontal 34
     electrode_positions = [(23, 12), (6, 40), (40, 40), 
       (23, 67), (6, 96), (40, 96),
       (23, 123), (6, 153), (40, 153),
@@ -144,13 +143,26 @@ class ImplantWidget(QtWidgets.QWidget):
     self.empty_implant_res = QtGui.QPixmap("empty-implant-image.png")
     self.empty_implant_pixmap = QtWidgets.QGraphicsPixmapItem(self.empty_implant_res)
     self.scene.addItem(self.empty_implant_pixmap)
+    self.empty_implant_pixmap.setPos(50, 0)
 
     self.electrode_res = QtGui.QPixmap("single-electrode-image-red.png")
 
     for electrode_pos in electrode_positions:
-      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res)
-      self.scene.addItem(self.electrode_pixmap)
+      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res, self.empty_implant_pixmap)
       self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
+
+    # Draw stimulation intensity bar
+    self.bar = QtWidgets.QGraphicsRectItem(0, 0, 10, 100)
+    self.scene.addItem(self.bar)
+
+    self.stable_stim_line = QtWidgets.QGraphicsLineItem(0, 50, 15, 50)
+    self.scene.addItem(self.stable_stim_line)
+
+    self.increase_stim_line = QtWidgets.QGraphicsLineItem(0, 30, 15, 30)
+    self.scene.addItem(self.increase_stim_line)
+
+    self.decrease_stim_line = QtWidgets.QGraphicsLineItem(0, 70, 15, 70)
+    self.scene.addItem(self.decrease_stim_line)
 
     self.view = QtWidgets.QGraphicsView(self.scene)
 
