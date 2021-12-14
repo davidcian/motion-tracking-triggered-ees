@@ -96,8 +96,6 @@ def estimate_pose(pose, rgb_image, depth_image, depth_scale=1):
       else:
         filtered_z = z
 
-      print("Filtered z", z)
-
       # WARNING: only append to values after filtering!
       raw_z_values[landmark].append(z)
 
