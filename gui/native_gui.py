@@ -1,31 +1,27 @@
 from ntpath import join
 import sys
 import random
+import argparse
+import os
+import csv
+import time
+
 from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtWidgets import QPushButton, QComboBox
 from PySide6.QtCore import Slot
-
 from PySide6.QtGui import QVector3D
-
 import pyqtgraph as pg
-
-import argparse
-
-import os
+import pyqtgraph.opengl as gl
 
 from video_tracking.rt_pose_estimation import estimate_pose, bone_list, landmarks_list
 
-import pyqtgraph.opengl as gl
-
 import numpy as np
-
 import mediapipe as mp
-
-import csv
-
 import cv2
 
 from image_data_providers import PyRealSenseCameraProvider, PyRealSenseVideoProvider, WebcamProvider
+
+from opensim_tools import calculate_angle, AngleTraj, path_planning
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -259,6 +255,11 @@ class MyWidget(QtWidgets.QWidget):
     show_implant_widget_button.clicked.connect(self.show_implant_stimulation)
     self.layout.addWidget(show_implant_widget_button)
 
+    self.monte = True
+    self.descend = False
+    self.counter = 0
+    self.stage = 'Down'
+
   @Slot()
   def show_implant_stimulation(self):
     self.implant_widget.show()
@@ -277,14 +278,66 @@ class MyWidget(QtWidgets.QWidget):
 
     # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale)
+    self.results = results
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
+
+    # Update angle_traj_widget by updating angle and time values:
+    landmarks = self.results.pose_world_landmarks.landmark
+
+    # Get coordinates
+    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
+              landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+              landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+
+    angle = calculate_angle(shoulder, elbow, wrist)
+    angle = abs(angle - 180)
+    if hasattr(self, 'angle_traj_widget'):
+      delta_t = time.time() - self.angle_traj_widget.time_begin
+      self.angle_traj_widget.update_values(delta_t,angle)
+      print(delta_t)
+      print(angle)
+
+    if angle < 30 and self.monte == True and self.descend != True:
+      self.stage = "down"
+      self.monte = False
+      self.descend = True
+    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False :
+      self.stage="up"
+      self.descend = False
+      self.monte = True
+      self.counter +=1
+      print(self.counter)
+
+    ###
 
     mp_drawing.draw_landmarks(
       rgb_image,
       results.pose_landmarks,
       mp_pose.POSE_CONNECTIONS,
       landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+
+    ###
+
+    # Render curl counter
+    # Setup status box
+    cv2.rectangle(rgb_image, (0,0), (225,78), (0,0,255), -1)
+    cv2.line(rgb_image,pt1=(100,0), pt2=(100,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image,pt1=(225,0), pt2=(225,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image,pt1=(0,78), pt2=(225,78), color=(255,255,255), thickness=2)
+
+    # Rep data
+    cv2.putText(rgb_image, 'REPS', (5,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(rgb_image, str(self.counter), (25,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+
+    # Stage data
+    cv2.putText(rgb_image, 'STAGE', (110,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(rgb_image, self.stage, (110,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+
+    ###
 
     cv2.imshow('MediaPipe Pose', rgb_image)
 
@@ -339,6 +392,25 @@ class MyWidget(QtWidgets.QWidget):
         skeleton.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
         skeleton.bone_items[i].setData(pos=skeleton.bone_item_positions[i], color=skeleton.bone_color)
 
+  def get_pos(self):
+    self.update_plot_data()
+
+    landmarks = self.results.pose_world_landmarks.landmark
+
+    # Get coordinates
+    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+    # elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+
+    return wrist, shoulder
+
+  def set_trajectory(self,angle_traj, time_traj):
+    self.angle_traj_widget = AngleTraj(angle_traj, time_traj)
+    self.angle_traj_widget.setWindowTitle('Trajectory window')
+    self.angle_traj_widget.time_begin = time.time()
+    self.angle_traj_widget.resize(800, 400)
+    self.angle_traj_widget.show()
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("-s", "--source", default='video')
@@ -365,6 +437,41 @@ if __name__ == '__main__':
       widget = MyWidget(pose, image_data_provider)
       widget.resize(800, 600)
       widget.show()
+
+      wrist, shoulder = widget.get_pos()
+
+      wrist_pos_i = [0.2, round(0.4 - wrist[1], 1), round(-wrist[0], 1)]
+      wrist_pos_f = [0.1, round(0.4 - shoulder[1], 1), round(-shoulder[0], 1)]
+      # landmark_init = results.pose_landmarks
+      print(wrist_pos_i)
+      print(wrist_pos_f)
+      print("main call")
+
+      angle_traj, time_traj = path_planning(wrist_pos_i, wrist_pos_f)
+      print(angle_traj)
+      print(angle_traj.shape)
+      print(angle_traj[:,1].shape)
+      print(time_traj)
+      angle_traj_2, time_traj_2 = path_planning(wrist_pos_f, wrist_pos_i)
+      angle_traj = np.concatenate([angle_traj,angle_traj_2])
+      time_traj_2 = time_traj_2 + np.max(time_traj)
+      time_traj = np.concatenate([time_traj,time_traj_2])
+      print(angle_traj)
+      print(angle_traj.shape)
+      print(angle_traj[:,1].shape)
+      print(time_traj)
+      print(time_traj)
+      for i in range(10):
+          angle_traj = np.concatenate([angle_traj,angle_traj])
+          time_traj_add = time_traj + np.max(time_traj)
+          time_traj = np.concatenate([time_traj,time_traj_add])
+      print("FINAL")
+      print(angle_traj)
+      print(angle_traj.shape)
+      print(angle_traj[:,1].shape)
+      print(time_traj)
+      print(time_traj)
+      widget.set_trajectory(angle_traj[:,1], time_traj)
 
       sys.exit(app.exec())
   finally:

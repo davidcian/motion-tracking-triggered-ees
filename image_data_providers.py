@@ -16,7 +16,7 @@ class WebcamProvider():
     return rgb_image
 
   def retrieve_depth_image(self):
-    depth_image = np.zeros((self.width, self.height))
+    depth_image = np.zeros((self.height, self.width))
     return depth_image
 
   def retrieve_rgb_depth_image(self):
