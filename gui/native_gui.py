@@ -131,7 +131,13 @@ class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
 
-    electrode_positions = [(23, 12)]
+    # Vertical 55/56, horizontal 34
+    electrode_positions = [(23, 12), (6, 40), (40, 40), 
+      (23, 67), (6, 96), (40, 96),
+      (23, 123), (6, 153), (40, 153),
+      (23, 180), (6, 209), (40, 209),
+      (23, 235), (6, 264), (40, 264),
+      (23, 292)]
     
     self.scene = QtWidgets.QGraphicsScene(self)
 
