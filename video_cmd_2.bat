@@ -1,1 +1,1 @@
-python native_gui.py -s webcam
+python gui\native_gui.py -s webcam

@@ -6,8 +6,8 @@ class WebcamProvider():
   def __init__(self):
     self.webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-    self.width  = int(self.webcam.get(cv2.CV_CAP_PROP_FRAME_WIDTH))
-    self.height = int(self.webcam.get(cv2.CV_CAP_PROP_FRAME_HEIGHT))
+    self.width  = int(self.webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
+    self.height = int(self.webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     self.depth_scale = 1
 

@@ -235,7 +235,7 @@ class MyWidget(QtWidgets.QWidget):
     cv2.imshow('RealSense', depth_colormap)
 
     # Estimate the pose with MediaPipe
-    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale, self.current_frame)
+    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale)
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
 
@@ -313,6 +313,7 @@ if __name__ == '__main__':
       image_data_provider = PyRealSenseCameraProvider()
     elif args.source == 'webcam':
       image_data_provider = WebcamProvider()
+      print("Img prov", image_data_provider)
 
     with mp_pose.Pose(static_image_mode=False,
       model_complexity=2,

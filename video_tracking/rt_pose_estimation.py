@@ -13,8 +13,6 @@ prev_frame_time = 0
 # used to record the time at which we processed current frame
 new_frame_time = 0
 
-landmarks_coord = []
-
 mp_pose = mp.solutions.pose
 
 landmarks_list = [mp_pose.PoseLandmark.LEFT_WRIST,mp_pose.PoseLandmark.LEFT_ELBOW,mp_pose.PoseLandmark.LEFT_SHOULDER,
@@ -56,14 +54,7 @@ filtered_bones = [[0, 0, 0, 0, 0, 0] for _ in bone_list]
 raw_joint_positions = {}
 filtered_joint_positions = {}
 
-def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
-  #frame = frame.reformat(frame.width, frame.height, 'rgb24')
-  #image = frame.to_ndarray()
-
-  # Convert the BGR image to RGB before processing.
-  #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-  #image = cv2.cvtColor(color_image_1,cv2.COLOR_BGR2RGB)
-
+def estimate_pose(pose, rgb_image, depth_image, depth_scale=1):
   image_height, image_width, _ = rgb_image.shape
   results = pose.process(rgb_image)
 
@@ -76,8 +67,7 @@ def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
       coord = results.pose_landmarks.landmark[landmark]
       x = min(int(coord.x * image_width), 640-1)
       y = min(int(coord.y * image_height), 480-1)
-      z = screen_depth_scale * depth_scale * depth_image[y,x]
-      landmarks_coord.append([current_frame, landmark,coord.x * image_width,coord.y * image_height, coord.z, z])
+      z = screen_depth_scale * depth_scale * depth_image[y, x]
 
       raw_joint_positions[landmark] = [x, y, z]
 
@@ -85,9 +75,6 @@ def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
         filtered_x = x_filter(raw_x_values[landmark], x)
       else:
         filtered_x = x
-
-      #print("Landmark", landmark)
-      #print("Coords", x, y, z)
 
       # WARNING: only append to values after filtering!
       raw_x_values[landmark].append(x)
@@ -108,6 +95,8 @@ def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
         filtered_z = z_filter(raw_z_values[landmark], z)
       else:
         filtered_z = z
+
+      print("Filtered z", z)
 
       # WARNING: only append to values after filtering!
       raw_z_values[landmark].append(z)

@@ -1,1 +1,1 @@
-python native_gui.py -s live -w true
+python gui\native_gui.py -s pyrealsense -w true

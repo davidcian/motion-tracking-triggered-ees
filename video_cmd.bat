@@ -1,1 +1,1 @@
-python native_gui.py -d D:\sensorimotor-data -z recording2.bag -w true
+python gui\native_gui.py -d D:\sensorimotor-data -z recording2.bag -w true
