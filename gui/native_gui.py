@@ -7,8 +7,6 @@ from PySide6.QtCore import Slot
 
 from PySide6.QtGui import QVector3D
 
-import pyrealsense2 as rs
-
 import pyqtgraph as pg
 
 import argparse
@@ -26,6 +24,8 @@ import mediapipe as mp
 import csv
 
 import cv2
+
+from image_data_providers import PyRealSenseCameraProvider, PyRealSenseVideoProvider, WebcamProvider
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -158,13 +158,13 @@ class Skeleton():
       self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
 
 class MyWidget(QtWidgets.QWidget):
-  def __init__(self, pose, pipeline=None, depth_scale=None, webcam=None):
+  def __init__(self, pose, image_data_provider):
     super().__init__()
 
     self.pose = pose
+    self.image_data_provider = image_data_provider
 
-    self.pipeline = pipeline
-    self.depth_scale = depth_scale
+    self.depth_scale = self.image_data_provider.depth_scale
 
     self.coordinate_plot_widget = CoordinatePlotWidget()
 
@@ -177,8 +177,6 @@ class MyWidget(QtWidgets.QWidget):
     self.layout = QtWidgets.QVBoxLayout(self)
 
     self.skeletons = {'raw': Skeleton([1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0]), 'filtered': Skeleton([0, 1.0, 0, 1.0], [0, 1.0, 0, 1.0])}
-
-    self.webcam = webcam
 
     ###
 
@@ -228,35 +226,18 @@ class MyWidget(QtWidgets.QWidget):
   def show_coordinate_plots(self):
     self.coordinate_plot_widget.show()
 
-  def retrieve_data(self):
-    if not self.webcam:
-      frames = self.pipeline.wait_for_frames()
-      depth_frame = frames.get_depth_frame()
-      color_frame = frames.get_color_frame()
-
-      depth_image = np.asanyarray(depth_frame.get_data())
-      rgb_image = np.asanyarray(color_frame.get_data())
-    else:
-      ret_val, rgb_image = self.webcam.read()
-      depth_image = np.zeros((rgb_image.shape[0], rgb_image.shape[1]))
-
-    return rgb_image, depth_image
-
   def update_plot_data(self):
-    rgb_image, depth_image = self.retrieve_data()
+    rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()
 
-    if not self.webcam:
-      # Color image of the depth
-      depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
+    # Color image of the depth
+    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
 
-      cv2.imshow('RealSense', depth_colormap)
+    cv2.imshow('RealSense', depth_colormap)
 
     # Estimate the pose with MediaPipe
     raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale, self.current_frame)
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
-    planned_joint_positions, planned_bones = None, None
-    expected_joint_positions, expected_bones = None, None
 
     mp_drawing.draw_landmarks(
       rgb_image,
@@ -321,34 +302,17 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("-s", "--source", default='video')
   parser.add_argument("-d", "--dir", default="C:\\Users\\cleme\\Documents\\EPFL\\Master\\MA-3\\sensor\\data\\")
-  parser.add_argument("-f", "--file", default='cam1_911222060374_record_30_09_2021_1404_05.avi')
   parser.add_argument("-z", "--depth-file")
   parser.add_argument("-w", "--with-depth")
   args = parser.parse_args()
 
   try:
-    pipeline_1 = rs.pipeline()
-    config_1 = rs.config()
-
     if args.source == 'video':
-      rs.config.enable_device_from_file(config_1, os.path.join(args.dir, args.depth_file))
-      config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    elif args.source == 'live':
-      ctx = rs.context()
-      devices = ctx.query_devices()
-      config_1.enable_device(str(devices[0].get_info(rs.camera_info.serial_number)))
-      config_1.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+      image_data_provider = PyRealSenseVideoProvider(file_path=os.path.join(args.dir, args.depth_file))
+    elif args.source == 'pyrealsense':
+      image_data_provider = PyRealSenseCameraProvider()
     elif args.source == 'webcam':
-      cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-
-    if args.with_depth == 'true':
-      config_1.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-
-    if not args.source == 'webcam':
-      # Start streaming from camera
-      profile = pipeline_1.start(config_1)
-      depth_sensor = profile.get_device().first_depth_sensor()
-      depth_scale = depth_sensor.get_depth_scale()
+      image_data_provider = WebcamProvider()
 
     with mp_pose.Pose(static_image_mode=False,
       model_complexity=2,
@@ -357,14 +321,10 @@ if __name__ == '__main__':
 
       app = QtWidgets.QApplication([])
 
-      if not args.source == 'webcam':
-        widget = MyWidget(pose, pipeline=pipeline_1, depth_scale=depth_scale)
-      else:
-        widget = MyWidget(pose, webcam=cam)
+      widget = MyWidget(pose, image_data_provider)
       widget.resize(800, 600)
       widget.show()
 
       sys.exit(app.exec())
   finally:
-    if not args.source == 'webcam':
-      pipeline_1.stop()
+    image_data_provider.stop()

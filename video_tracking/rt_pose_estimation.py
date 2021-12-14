@@ -86,6 +86,9 @@ def estimate_pose(pose, rgb_image, depth_image, current_frame, depth_scale=1):
       else:
         filtered_x = x
 
+      #print("Landmark", landmark)
+      #print("Coords", x, y, z)
+
       # WARNING: only append to values after filtering!
       raw_x_values[landmark].append(x)
 
