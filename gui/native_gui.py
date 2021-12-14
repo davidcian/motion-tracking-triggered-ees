@@ -313,7 +313,6 @@ if __name__ == '__main__':
       image_data_provider = PyRealSenseCameraProvider()
     elif args.source == 'webcam':
       image_data_provider = WebcamProvider()
-      print("Img prov", image_data_provider)
 
     with mp_pose.Pose(static_image_mode=False,
       model_complexity=2,
