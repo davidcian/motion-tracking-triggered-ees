@@ -23,6 +23,9 @@ from image_data_providers import PyRealSenseCameraProvider, PyRealSenseVideoProv
 
 from opensim_tools import calculate_angle, AngleTraj, path_planning
 
+from coordinate_display import CoordinatePlotWidget
+from implant_display import ImplantWidget
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -30,155 +33,6 @@ mp_pose = mp.solutions.pose
 pen1 = pg.mkPen(color='r', width=2)
 pen2 = pg.mkPen(color='g', width=2)
 pen3 = pg.mkPen(color='b', width=2)
-
-class CoordinatePlotWidget(QtWidgets.QWidget):
-  def __init__(self):
-    super().__init__()
-
-    self.selected_joint = mp_pose.PoseLandmark.LEFT_WRIST
-
-    self.graphWidget = pg.PlotWidget()
-
-    self.frame_indices = []
-    # Features tracked by the coordinate plot (e.g. Cartesian coordinates of a joint)
-    self.features_vals = {'x_val': [], 'filtered_x_val': [], 'y_val': [], 'filtered_y_val': [], 'z_val': [], 'filtered_z_val': []}
-
-    self.graphWidget.setTitle("Real vs. filtered 3D coordinates")
-    self.graphWidget.setLabel('left', "Coordinate value")
-    self.graphWidget.setLabel('bottom', "Frame index")
-    self.graphWidget.setBackground('w')
-    self.graphWidget.addLegend()
-
-    # Names of features currently displayed on plot
-    self.visible_features = ['x_val', 'filtered_x_val']
-
-    self.feature_pens = {'x_val': pen1, 'filtered_x_val': pen2, 'y_val': pen1, 'filtered_y_val': pen2, 'z_val': pen1, 'filtered_z_val': pen2}
-
-    self.visible_line_refs = {}
-
-    self.draw_visible_lines()
-
-    self.layout = QtWidgets.QVBoxLayout(self)
-    
-    self.layout.addWidget(self.graphWidget)
-
-    joint_choice_combo = QComboBox(self)
-    for joint in landmarks_list:
-      joint_choice_combo.addItem(str(joint))
-    joint_choice_combo.currentIndexChanged.connect(lambda: self.select_joint(landmarks_list[joint_choice_combo.currentIndex()]))
-    self.layout.addWidget(joint_choice_combo)
-
-    self.show_x_button = QPushButton("Show X coordinate")
-    self.show_y_button = QPushButton("Show Y coordinate")
-    self.show_z_button = QPushButton("Show Z coordinate")
-
-    self.show_x_button.clicked.connect(self.show_x_coordinate_plot)
-    self.show_y_button.clicked.connect(self.show_y_coordinate_plot)
-    self.show_z_button.clicked.connect(self.show_z_coordinate_plot)
-
-    self.layout.addWidget(self.show_x_button)
-    self.layout.addWidget(self.show_y_button)
-    self.layout.addWidget(self.show_z_button)
-
-  @Slot()
-  def select_joint(self, joint):
-    self.selected_joint = joint
-
-  def update(self, frame_indices, features_update):
-    self.frame_indices = frame_indices
-
-    for feature_name, feature_val in features_update.items():
-      self.features_vals[feature_name].append(feature_val)
-
-    for visible_feature_name in self.visible_features:
-      self.visible_line_refs[visible_feature_name].setData(self.frame_indices, self.features_vals[visible_feature_name])
-
-  @Slot()
-  def show_x_coordinate_plot(self):
-    self.clear_visible_lines()
-    self.visible_features = ['x_val', 'filtered_x_val']
-    self.draw_visible_lines()
-
-  @Slot()
-  def show_y_coordinate_plot(self):
-    self.clear_visible_lines()
-    self.visible_features = ['y_val', 'filtered_y_val']
-    self.draw_visible_lines()
-
-  @Slot()
-  def show_z_coordinate_plot(self):
-    self.clear_visible_lines()
-    self.visible_features = ['z_val', 'filtered_z_val']
-    self.draw_visible_lines()
-
-  def clear_visible_lines(self):
-    for visible_feature_name in self.visible_features:
-      self.graphWidget.removeItem(self.visible_line_refs[visible_feature_name])
-
-  def draw_visible_lines(self):
-    for visible_feature_name in self.visible_features:
-      if visible_feature_name not in self.visible_line_refs:
-        self.visible_line_refs[visible_feature_name] = pg.PlotDataItem(self.frame_indices, 
-          self.features_vals[visible_feature_name], pen=self.feature_pens[visible_feature_name], name=visible_feature_name)
-
-      self.graphWidget.addItem(self.visible_line_refs[visible_feature_name])
-
-class ImplantWidget(QtWidgets.QWidget):
-  def __init__(self):
-    super().__init__()
-
-    stim_configs = {"config1": [0, 5]}
-
-    selected_stim_config = "config1"
-
-    electrode_positions = [(23, 12), (6, 40), (40, 40), 
-      (23, 67), (6, 96), (40, 96),
-      (23, 123), (6, 153), (40, 153),
-      (23, 180), (6, 209), (40, 209),
-      (23, 235), (6, 264), (40, 264),
-      (23, 292)]
-    
-    self.scene = QtWidgets.QGraphicsScene(self)
-
-    self.empty_implant_res = QtGui.QPixmap("empty-implant-image.png")
-    self.empty_implant_pixmap = QtWidgets.QGraphicsPixmapItem(self.empty_implant_res)
-    self.scene.addItem(self.empty_implant_pixmap)
-    self.empty_implant_pixmap.setPos(50, 0)
-
-    self.electrode_res = QtGui.QPixmap("single-electrode-image-red.png")
-
-    for active_electrode_idx in stim_configs[selected_stim_config]:
-      electrode_pos = electrode_positions[active_electrode_idx]
-      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res, self.empty_implant_pixmap)
-      self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
-
-    # Draw stimulation intensity bar
-    self.bar = QtWidgets.QGraphicsRectItem(0, 0, 10, 100)
-    self.scene.addItem(self.bar)
-
-    self.stable_stim_line = QtWidgets.QGraphicsLineItem(0, 50, 15, 50)
-    self.scene.addItem(self.stable_stim_line)
-
-    self.update_stable_stim(60)
-
-    self.increase_stim_line = QtWidgets.QGraphicsLineItem(0, 30, 15, 30)
-    self.scene.addItem(self.increase_stim_line)
-
-    self.decrease_stim_line = QtWidgets.QGraphicsLineItem(0, 70, 15, 70)
-    self.scene.addItem(self.decrease_stim_line)
-
-    self.view = QtWidgets.QGraphicsView(self.scene)
-
-    self.view.show()
-
-  def update_stable_stim(self, value):
-    self.stable_stim_line.setLine(0, value, 15, value)
-
-  def update_increase_stim(self, value):
-    self.increase_stim_line.setLine(0, value, 15, value)
-
-  def update_decrease_stim(self, value):
-    self.decrease_stim_line.setLine(0, value, 15, value)
 
 class Skeleton():
   def __init__(self, joint_color, bone_color):
