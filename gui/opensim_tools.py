@@ -23,15 +23,6 @@ def calculate_angle(a, b, c):
 
   return angle
 
-def countdown(t):
-  while t:
-    mins, secs = divmod(t, 60)
-    timer = '{:02d}:{:02d}'.format(mins, secs)
-    print(timer, end="\r")
-    time.sleep(1)
-    t -= 1
-  print('Measurement')
-
 def path_planning(wrist_pos_i, wrist_pos_f):
   traj = True  # to define wrist trajectory and write opensim trc file
   inv_kin = True  # to perform Inverse Kinematics with OpenSim

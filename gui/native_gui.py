@@ -152,8 +152,6 @@ class MyWidget(QtWidgets.QWidget):
     if hasattr(self, 'angle_traj_widget'):
       delta_t = time.time() - self.angle_traj_widget.time_begin
       self.angle_traj_widget.update_values(delta_t,angle)
-      print(delta_t)
-      print(angle)
 
     if angle < 30 and self.monte == True and self.descend != True:
       self.stage = "down"
@@ -164,7 +162,6 @@ class MyWidget(QtWidgets.QWidget):
       self.descend = False
       self.monte = True
       self.counter +=1
-      print(self.counter)
 
     ###
 
@@ -290,7 +287,6 @@ if __name__ == '__main__':
 
       widget = MyWidget(pose, image_data_provider)
       widget.resize(800, 600)
-      #widget.show()
 
       main_window = QMainWindow()
       main_window.setCentralWidget(widget)
@@ -300,35 +296,19 @@ if __name__ == '__main__':
 
       wrist_pos_i = [0.2, round(0.4 - wrist[1], 1), round(-wrist[0], 1)]
       wrist_pos_f = [0.1, round(0.4 - shoulder[1], 1), round(-shoulder[0], 1)]
-      # landmark_init = results.pose_landmarks
-      print(wrist_pos_i)
-      print(wrist_pos_f)
-      print("main call")
 
       angle_traj, time_traj = path_planning(wrist_pos_i, wrist_pos_f)
-      print(angle_traj)
-      print(angle_traj.shape)
-      print(angle_traj[:,1].shape)
-      print(time_traj)
+
       angle_traj_2, time_traj_2 = path_planning(wrist_pos_f, wrist_pos_i)
       angle_traj = np.concatenate([angle_traj,angle_traj_2])
       time_traj_2 = time_traj_2 + np.max(time_traj)
       time_traj = np.concatenate([time_traj,time_traj_2])
-      print(angle_traj)
-      print(angle_traj.shape)
-      print(angle_traj[:,1].shape)
-      print(time_traj)
-      print(time_traj)
+
       for i in range(10):
           angle_traj = np.concatenate([angle_traj,angle_traj])
           time_traj_add = time_traj + np.max(time_traj)
           time_traj = np.concatenate([time_traj,time_traj_add])
-      print("FINAL")
-      print(angle_traj)
-      print(angle_traj.shape)
-      print(angle_traj[:,1].shape)
-      print(time_traj)
-      print(time_traj)
+
       widget.set_trajectory(angle_traj[:,1], time_traj)
 
       sys.exit(app.exec())
