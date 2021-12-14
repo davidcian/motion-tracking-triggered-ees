@@ -7,7 +7,7 @@ import csv
 import time
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtWidgets import QPushButton, QComboBox
+from PySide6.QtWidgets import QPushButton, QComboBox, QMainWindow
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QVector3D
 import pyqtgraph as pg
@@ -290,7 +290,11 @@ if __name__ == '__main__':
 
       widget = MyWidget(pose, image_data_provider)
       widget.resize(800, 600)
-      widget.show()
+      #widget.show()
+
+      main_window = QMainWindow()
+      main_window.setCentralWidget(widget)
+      main_window.show()
 
       wrist, shoulder = widget.get_pos()
 
