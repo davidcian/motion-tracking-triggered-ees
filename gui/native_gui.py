@@ -163,6 +163,8 @@ class ImplantWidget(QtWidgets.QWidget):
     self.stable_stim_line = QtWidgets.QGraphicsLineItem(0, 50, 15, 50)
     self.scene.addItem(self.stable_stim_line)
 
+    self.update_stable_stim(60)
+
     self.increase_stim_line = QtWidgets.QGraphicsLineItem(0, 30, 15, 30)
     self.scene.addItem(self.increase_stim_line)
 
@@ -172,6 +174,15 @@ class ImplantWidget(QtWidgets.QWidget):
     self.view = QtWidgets.QGraphicsView(self.scene)
 
     self.view.show()
+
+  def update_stable_stim(self, value):
+    self.stable_stim_line.setLine(0, value, 15, value)
+
+  def update_increase_stim(self, value):
+    self.increase_stim_line.setLine(0, value, 15, value)
+
+  def update_decrease_stim(self, value):
+    self.decrease_stim_line.setLine(0, value, 15, value)
 
 class Skeleton():
   def __init__(self, joint_color, bone_color):
