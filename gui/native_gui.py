@@ -130,14 +130,21 @@ class CoordinatePlotWidget(QtWidgets.QWidget):
 class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
+
+    electrode_positions = [(23, 12)]
     
     self.scene = QtWidgets.QGraphicsScene(self)
 
-    self.pixmap_res = QtGui.QPixmap("empty-implant-image.png")
+    self.empty_implant_res = QtGui.QPixmap("empty-implant-image.png")
+    self.empty_implant_pixmap = QtWidgets.QGraphicsPixmapItem(self.empty_implant_res)
+    self.scene.addItem(self.empty_implant_pixmap)
 
-    self.pixmap = QtWidgets.QGraphicsPixmapItem(self.pixmap_res)
+    self.electrode_res = QtGui.QPixmap("single-electrode-image-red.png")
 
-    self.scene.addItem(self.pixmap)
+    for electrode_pos in electrode_positions:
+      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res)
+      self.scene.addItem(self.electrode_pixmap)
+      self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
 
     self.view = QtWidgets.QGraphicsView(self.scene)
 
