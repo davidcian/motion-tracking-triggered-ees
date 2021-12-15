@@ -101,6 +101,8 @@ class SkeletonWidget(QtWidgets.QWidget):
     self.counter = 0
     self.stage = 'Down'
 
+    self.has_traj = False
+
   @Slot()
   def show_implant_stimulation(self):
     self.implant_widget.show()
@@ -144,7 +146,7 @@ class SkeletonWidget(QtWidgets.QWidget):
       self.stage = "down"
       self.monte = False
       self.descend = True
-    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False :
+    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False:
       self.stage="up"
       self.descend = False
       self.monte = True
@@ -230,6 +232,9 @@ class SkeletonWidget(QtWidgets.QWidget):
         skeleton.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
         skeleton.bone_items[i].setData(pos=skeleton.bone_item_positions[i], color=skeleton.bone_color)
 
+    if self.has_traj:
+      self.angle_traj_widget.update_plot()
+
   def get_pos(self):
     self.update_plot_data()
 
@@ -243,6 +248,7 @@ class SkeletonWidget(QtWidgets.QWidget):
     return wrist, shoulder
 
   def set_trajectory(self,angle_traj, time_traj):
+    self.has_traj = True
     self.angle_traj_widget = AngleTraj(angle_traj, time_traj)
     self.angle_traj_widget.setWindowTitle('Trajectory window')
     self.angle_traj_widget.time_begin = time.time()

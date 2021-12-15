@@ -192,12 +192,15 @@ def plot_ik_results(IK_file, joints=['shoulder_elev', 'elv_angle', 'shoulder_rot
   plt.savefig(os.path.dirname(IK_file) + '/IK_joints.png')
   return IK_angles, IK_time
 
-class AngleTraj(QtWidgets.QMainWindow):
+class AngleTraj(QtWidgets.QWidget):
   def __init__(self, angle_traj, time_traj):
     super(AngleTraj, self).__init__()
 
+    self.layout = QtWidgets.QVBoxLayout(self)
+
     self.graphWidget = pg.PlotWidget()
-    self.setCentralWidget(self.graphWidget)
+
+    self.layout.addWidget(self.graphWidget)
 
     self.graphWidget.setTitle("Comparison of planned and real angle trajectory", size="10pt")
     self.graphWidget.setLabel("left", "Angle (°)")
@@ -213,11 +216,6 @@ class AngleTraj(QtWidgets.QMainWindow):
 
     self.graphWidget.plot(time_traj, angle_traj,name="Trajectory planned")
     self.graphWidget.plot([1], [30], name="Real", symbol='o', symbolSize=10, symbolBrush=('g'))
-
-    self.timer = QtCore.QTimer(self)
-    self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot())
-    update_interval = 100
-    self.timer.start(update_interval)
 
     self.angle = 0
     self.time_t = 0
