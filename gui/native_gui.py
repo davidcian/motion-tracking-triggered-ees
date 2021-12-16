@@ -53,8 +53,8 @@ class MainWindow(QMainWindow):
     self.setCentralWidget(self.skeleton_widget)
 
     self.implant_widget = ImplantWidget()
-    self.coordinate_plot_widget = QDockWidget(self)
-    self.coordinate_plot_widget.setWidget(CoordinatePlotWidget())
+    self.coordinate_plot_dock_widget = QDockWidget(self)
+    self.coordinate_plot_dock_widget.setWidget(CoordinatePlotWidget())
 
     self.view_menu = self.menu_bar.addMenu('View')
     view_implant_action = QAction('Implant', self)
@@ -125,13 +125,13 @@ class MainWindow(QMainWindow):
 
     cv2.imshow('MediaPipe Pose', self.rgb_image)
 
-    x, y, z = self.raw_joint_positions[self.coordinate_plot_widget.selected_joint]
-    filtered_x, filtered_y, filtered_z = self.filtered_joint_positions[self.coordinate_plot_widget.selected_joint]
+    x, y, z = self.raw_joint_positions[self.coordinate_plot_dock_widget.widget().selected_joint]
+    filtered_x, filtered_y, filtered_z = self.filtered_joint_positions[self.coordinate_plot_dock_widget.widget().selected_joint]
 
     self.features_update = {'x_val': x, 'y_val': y, 'z_val': z, 'filtered_z_val': filtered_z}
   
   def update_view(self):
-    self.coordinate_plot_widget.update(self.frame_indices, self.features_update)
+    self.coordinate_plot_dock_widget.widget().update(self.frame_indices, self.features_update)
 
     if self.has_traj:
       # Update angle_traj_widget by updating angle and time values:
