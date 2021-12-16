@@ -70,6 +70,9 @@ class MainWindow(QMainWindow):
     view_coordinates_action = QAction('Coordinates', self)
     view_coordinates_action.triggered.connect(self.show_coordinate_plots)
     self.view_menu.addAction(view_coordinates_action)
+    view_rgb_action = QAction('RGB image', self)
+    view_rgb_action.triggered.connect(self.toggle_rgb_image)
+    self.view_menu.addAction(view_rgb_action)
 
     wrist, shoulder = self.get_pos()
 
@@ -156,6 +159,13 @@ class MainWindow(QMainWindow):
   @Slot()
   def show_coordinate_plots(self):
     self.coordinate_plot_widget.show()
+
+  @Slot()
+  def toggle_rgb_image(self):
+    if self.rgb_image_dock_widget.isVisible():
+      self.rgb_image_dock_widget.hide()
+    else:
+      self.rgb_image_dock_widget.show()
 
   def get_pos(self):
     rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()
