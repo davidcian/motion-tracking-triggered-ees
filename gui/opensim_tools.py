@@ -229,18 +229,7 @@ class AngleTraj(QtWidgets.QWidget):
     self.stage = 'Down'
 
   @Slot()
-  def update_plot(self, landmarks, rgb_image):
-    # Get coordinates
-    shoulder = [landmarks[self.joint1.value].x,
-                landmarks[self.joint1.value].y]
-    elbow = [landmarks[self.joint2.value].x,
-              landmarks[self.joint2.value].y]
-    wrist = [landmarks[self.joint3.value].x,
-              landmarks[self.joint3.value].y]
-
-    angle = calculate_angle(shoulder, elbow, wrist)
-    angle = abs(angle - 180)
-    
+  def update_plot(self, angle, rgb_image):
     total_elapsed_time = time.time() - self.time_begin
 
     if total_elapsed_time > 20:

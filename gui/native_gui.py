@@ -29,15 +29,11 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
-pen1 = pg.mkPen(color='r', width=2)
-pen2 = pg.mkPen(color='g', width=2)
-pen3 = pg.mkPen(color='b', width=2)
-
 class MainWindow(QMainWindow):
   def __init__(self, pose, image_data_provider):
     super().__init__()
 
-    self.setGeometry(100, 100, 1000, 800)
+    self.setGeometry(100, 100, 1400, 800)
 
     self.pose = pose
     self.image_data_provider = image_data_provider
@@ -52,16 +48,20 @@ class MainWindow(QMainWindow):
 
     self.setCentralWidget(self.skeleton_widget)
 
-    self.implant_dock_widget = QDockWidget('Implant', self)
+    self.implant_dock_widget = QDockWidget('Implant')
     self.implant_dock_widget.setWidget(ImplantWidget())
+    self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.implant_dock_widget)
     self.coordinate_plot_dock_widget = QDockWidget('Coordinates', self)
     self.coordinate_plot_dock_widget.setWidget(CoordinatePlotWidget())
+    self.coordinate_plot_dock_widget.hide()
 
     self.rgb_image_dock_widget = QDockWidget('RGB image', self)
     self.rgb_image_dock_widget.setWidget(QLabel())
+    self.rgb_image_dock_widget.hide()
 
     self.depth_image_dock_widget = QDockWidget('Depth image', self)
     self.depth_image_dock_widget.setWidget(QLabel())
+    self.depth_image_dock_widget.hide()
 
     self.view_menu = self.menu_bar.addMenu('View')
     self.view_menu.addAction(self.implant_dock_widget.toggleViewAction())
@@ -96,6 +96,8 @@ class MainWindow(QMainWindow):
     self.features_update = None
     self.results = None
     self.rgb_image = None
+
+    self.target_angle = 45
 
   @Slot()
   def update(self):
@@ -140,10 +142,24 @@ class MainWindow(QMainWindow):
     #print("Updating view, has traj?", self.has_traj)
     self.coordinate_plot_dock_widget.widget().update(self.frame_indices, self.features_update)
 
+    # Get coordinates
+    landmarks = self.results.pose_world_landmarks.landmark
+    shoulder = [landmarks[self.angle_traj_widget.joint1.value].x,
+                landmarks[self.angle_traj_widget.joint1.value].y]
+    elbow = [landmarks[self.angle_traj_widget.joint2.value].x,
+              landmarks[self.angle_traj_widget.joint2.value].y]
+    wrist = [landmarks[self.angle_traj_widget.joint3.value].x,
+              landmarks[self.angle_traj_widget.joint3.value].y]
+
+    angle = calculate_angle(shoulder, elbow, wrist)
+    angle = abs(angle - 180)
+
     # Update angle_traj_widget by updating angle and time values:
-    self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, self.rgb_image)
+    self.angle_traj_widget.update_plot(angle, self.rgb_image)
 
     self.skeleton_widget.update_plot_data(self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
+
+    self.implant_dock_widget.widget().update(angle, self.target_angle)
 
   def get_pos(self):
     rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()

@@ -1,5 +1,9 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from PySide6.QtGui import QPen, QColor
+
+red_pen = QPen(QColor('red'))
+
 class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
@@ -30,29 +34,30 @@ class ImplantWidget(QtWidgets.QWidget):
       self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
 
     # Draw stimulation intensity bar
-    self.bar = QtWidgets.QGraphicsRectItem(0, 0, 10, 100)
+    self.stim_bar_height = 100
+    self.bar = QtWidgets.QGraphicsRectItem(0, 0, 10, self.stim_bar_height)
     self.scene.addItem(self.bar)
 
     self.stable_stim_line = QtWidgets.QGraphicsLineItem(0, 50, 15, 50)
     self.scene.addItem(self.stable_stim_line)
 
-    self.update_stable_stim(60)
+    #self.increase_stim_line = QtWidgets.QGraphicsLineItem(0, 30, 15, 30)
+    #self.scene.addItem(self.increase_stim_line)
 
-    self.increase_stim_line = QtWidgets.QGraphicsLineItem(0, 30, 15, 30)
-    self.scene.addItem(self.increase_stim_line)
+    #self.decrease_stim_line = QtWidgets.QGraphicsLineItem(0, 70, 15, 70)
+    #self.scene.addItem(self.decrease_stim_line)
 
-    self.decrease_stim_line = QtWidgets.QGraphicsLineItem(0, 70, 15, 70)
-    self.scene.addItem(self.decrease_stim_line)
+    self.actual_stim_line = QtWidgets.QGraphicsLineItem(0, 50, 15, 50)
+    self.actual_stim_line.setPen(red_pen)
+    self.scene.addItem(self.actual_stim_line)
 
     self.view = QtWidgets.QGraphicsView(self.scene, self)
 
     self.view.show()
 
-  def update_stable_stim(self, value):
-    self.stable_stim_line.setLine(0, value, 15, value)
+  def update_stim(self, line_item, value):
+    line_item.setLine(0, value, 15, value)
 
-  def update_increase_stim(self, value):
-    self.increase_stim_line.setLine(0, value, 15, value)
-
-  def update_decrease_stim(self, value):
-    self.decrease_stim_line.setLine(0, value, 15, value)
+  def update(self, current_angle, target_angle):
+    # Suppose the stable stim is proportional to the angle measured from bottom
+    self.update_stim(self.stable_stim_line, ((180 - current_angle) / 180) * self.stim_bar_height)
