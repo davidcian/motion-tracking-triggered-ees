@@ -52,7 +52,8 @@ class MainWindow(QMainWindow):
 
     self.setCentralWidget(self.skeleton_widget)
 
-    self.implant_widget = ImplantWidget()
+    self.implant_dock_widget = QDockWidget(self)
+    self.implant_dock_widget.setWidget(ImplantWidget())
     self.coordinate_plot_dock_widget = QDockWidget(self)
     self.coordinate_plot_dock_widget.setWidget(CoordinatePlotWidget())
 

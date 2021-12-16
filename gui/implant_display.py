@@ -44,7 +44,7 @@ class ImplantWidget(QtWidgets.QWidget):
     self.decrease_stim_line = QtWidgets.QGraphicsLineItem(0, 70, 15, 70)
     self.scene.addItem(self.decrease_stim_line)
 
-    self.view = QtWidgets.QGraphicsView(self.scene)
+    self.view = QtWidgets.QGraphicsView(self.scene, self)
 
     self.view.show()
 
