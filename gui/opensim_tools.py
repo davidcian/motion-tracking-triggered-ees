@@ -228,6 +228,9 @@ class AngleTraj(QtWidgets.QWidget):
     self.counter = 0
     self.stage = 'Down'
 
+    self.lower_bound = 30
+    self.upper_bound = 120
+
   @Slot()
   def update_plot(self, angle, rgb_image):
     total_elapsed_time = time.time() - self.time_begin
@@ -235,11 +238,11 @@ class AngleTraj(QtWidgets.QWidget):
     if total_elapsed_time > 20:
       self.graphWidget.setXRange(int(total_elapsed_time) - 20, int(total_elapsed_time))
 
-    if angle < 30 and self.monte == True and self.descend != True:
+    if angle < self.lower_bound and self.monte == True and self.descend != True:
       self.stage = "down"
       self.monte = False
       self.descend = True
-    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False:
+    if angle > self.upper_bound and self.stage =='down' and self.descend == True and self.monte == False:
       self.stage = "up"
       self.descend = False
       self.monte = True

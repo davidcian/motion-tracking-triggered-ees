@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
     self.results = None
     self.rgb_image = None
 
-    self.target_angle = 45
+    self.target_angle = self.angle_traj_widget.lower_bound
 
   @Slot()
   def update(self):
@@ -153,6 +153,11 @@ class MainWindow(QMainWindow):
 
     angle = calculate_angle(shoulder, elbow, wrist)
     angle = abs(angle - 180)
+
+    if angle < self.angle_traj_widget.lower_bound:
+      self.target_angle = self.angle_traj_widget.upper_bound
+    elif angle > self.angle_traj_widget.upper_bound:
+      self.target_angle = self.angle_traj_widget.lower_bound
 
     # Update angle_traj_widget by updating angle and time values:
     self.angle_traj_widget.update_plot(angle, self.rgb_image)

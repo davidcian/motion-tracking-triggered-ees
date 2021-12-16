@@ -60,4 +60,6 @@ class ImplantWidget(QtWidgets.QWidget):
 
   def update(self, current_angle, target_angle):
     # Suppose the stable stim is proportional to the angle measured from bottom
-    self.update_stim(self.stable_stim_line, ((180 - current_angle) / 180) * self.stim_bar_height)
+    self.update_stim(self.stable_stim_line, ((((180 - current_angle) / 180) * self.stim_bar_height) // 2) + (self.stim_bar_height // 4))
+    # Suppose the actual stim is proportional to the angle difference
+    self.update_stim(self.actual_stim_line, (current_angle - target_angle) * self.stim_bar_height)
