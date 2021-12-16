@@ -8,9 +8,9 @@ class ImplantWidget(QtWidgets.QWidget):
   def __init__(self):
     super().__init__()
 
-    stim_configs = {"config1": [0, 5]}
+    stim_configs = {"config12": [[13, 14], [15]]}
 
-    selected_stim_config = "config1"
+    selected_stim_config = "config12"
 
     electrode_positions = [(23, 12), (6, 40), (40, 40), 
       (23, 67), (6, 96), (40, 96),
@@ -26,11 +26,24 @@ class ImplantWidget(QtWidgets.QWidget):
     self.scene.addItem(self.empty_implant_pixmap)
     self.empty_implant_pixmap.setPos(50, 0)
 
-    self.electrode_res = QtGui.QPixmap("single-electrode-image-red.png")
+    self.anode_res = QtGui.QPixmap("single-electrode-image-white.png")
+    self.cathode_res = QtGui.QPixmap("single-electrode-image-red.png")
+    self.inactive_res = QtGui.QPixmap("single-electrode-image-grey.png")
 
-    for active_electrode_idx in stim_configs[selected_stim_config]:
-      electrode_pos = electrode_positions[active_electrode_idx]
-      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.electrode_res, self.empty_implant_pixmap)
+    for i, electrode_pos in enumerate(electrode_positions):
+      if i in stim_configs[selected_stim_config][0]:
+        anode_pixmap = QtWidgets.QGraphicsPixmapItem(self.anode_res, self.empty_implant_pixmap)
+        anode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
+      elif i in stim_configs[selected_stim_config][1]:
+        cathode_pixmap = QtWidgets.QGraphicsPixmapItem(self.cathode_res, self.empty_implant_pixmap)
+        cathode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
+      else:
+        inactive_pixmap = QtWidgets.QGraphicsPixmapItem(self.inactive_res, self.empty_implant_pixmap)
+        inactive_pixmap.setPos(electrode_pos[0], electrode_pos[1])
+
+    for anode_electrode_idx in stim_configs[selected_stim_config][0]:
+      electrode_pos = electrode_positions[anode_electrode_idx]
+      self.electrode_pixmap = QtWidgets.QGraphicsPixmapItem(self.anode_res, self.empty_implant_pixmap)
       self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
 
     # Draw stimulation intensity bar
