@@ -10,6 +10,12 @@ from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Slot
 import pyqtgraph as pg
 
+import mediapipe as mp
+
+import cv2
+
+mp_pose = mp.solutions.pose
+
 def calculate_angle(a, b, c):
   a = np.array(a)  # First
   b = np.array(b)  # Mid
@@ -195,6 +201,9 @@ def plot_ik_results(IK_file, joints=['shoulder_elev', 'elv_angle', 'shoulder_rot
 class AngleTraj(QtWidgets.QWidget):
   def __init__(self, angle_traj, time_traj):
     super(AngleTraj, self).__init__()
+    self.joint1 = mp_pose.PoseLandmark.RIGHT_SHOULDER
+    self.joint2 = mp_pose.PoseLandmark.RIGHT_ELBOW
+    self.joint3 = mp_pose.PoseLandmark.RIGHT_WRIST
 
     self.layout = QtWidgets.QVBoxLayout(self)
 
@@ -211,26 +220,59 @@ class AngleTraj(QtWidgets.QWidget):
     self.graphWidget.showGrid(x=True, y=True)
     self.graphWidget.setXRange(0, 20)
 
-    #hour = [1,2,3,4,5,6,7,8,9,10]
-    #temperature = [30,32,34,32,33,31,29,32,35,45]
-
     self.graphWidget.plot(time_traj, angle_traj,name="Trajectory planned")
     self.graphWidget.plot([1], [30], name="Real", symbol='o', symbolSize=10, symbolBrush=('g'))
 
-    self.angle = 0
-    self.time_t = 0
+    self.monte = True
+    self.descend = False
+    self.counter = 0
+    self.stage = 'Down'
 
   @Slot()
-  def update_plot(self):
-    #pen = pg.mkPen(color=(255, 0, 0), width=15, style=QtCore.Qt.DashLine)
-    self.graphWidget.plot([self.time_t], [self.angle], symbol='o', symbolSize=10, symbolBrush=('g'))
+  def update_plot(self, landmarks, rgb_image):
+    # Get coordinates
+    shoulder = [landmarks[self.joint1.value].x,
+                landmarks[self.joint1.value].y]
+    elbow = [landmarks[self.joint2.value].x,
+              landmarks[self.joint2.value].y]
+    wrist = [landmarks[self.joint3.value].x,
+              landmarks[self.joint3.value].y]
 
-  def update_values(self,time_t,angle):
-    self.time_t = time_t
-    self.angle = angle
-    if time_t > 20:
-        self.graphWidget.setXRange(int(time_t)-20,int(time_t))
+    angle = calculate_angle(shoulder, elbow, wrist)
+    angle = abs(angle - 180)
+    
+    total_elapsed_time = time.time() - self.time_begin
 
-  def set_trajectory(self,angle_traj, time_traj):
+    if total_elapsed_time > 20:
+      self.graphWidget.setXRange(int(total_elapsed_time) - 20, int(total_elapsed_time))
+
+    if angle < 30 and self.monte == True and self.descend != True:
+      self.stage = "down"
+      self.monte = False
+      self.descend = True
+    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False:
+      self.stage = "up"
+      self.descend = False
+      self.monte = True
+      self.counter +=1
+
+    self.graphWidget.plot([total_elapsed_time], [angle], symbol='o', symbolSize=10, symbolBrush=('g'))
+
+    # Render curl counter
+    # Setup status box
+    cv2.rectangle(rgb_image, (0,0), (225,78), (0,0,255), -1)
+    cv2.line(rgb_image,pt1=(100,0), pt2=(100,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image,pt1=(225,0), pt2=(225,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image,pt1=(0,78), pt2=(225,78), color=(255,255,255), thickness=2)
+
+    # Rep data
+    cv2.putText(rgb_image, 'REPS', (5,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(rgb_image, str(self.counter), (25,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+
+    # Stage data
+    cv2.putText(rgb_image, 'STAGE', (110,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(rgb_image, self.stage, (110,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+
+  def set_trajectory(self, angle_traj, time_traj):
     self.angle_traj = angle_traj
     self.time_traj = time_traj

@@ -96,11 +96,6 @@ class SkeletonWidget(QtWidgets.QWidget):
     show_implant_widget_button.clicked.connect(self.show_implant_stimulation)
     self.layout.addWidget(show_implant_widget_button)
 
-    self.monte = True
-    self.descend = False
-    self.counter = 0
-    self.stage = 'Down'
-
     self.has_traj = False
 
   @Slot()
@@ -125,59 +120,17 @@ class SkeletonWidget(QtWidgets.QWidget):
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
 
-    # Update angle_traj_widget by updating angle and time values:
-    landmarks = self.results.pose_world_landmarks.landmark
-
-    # Get coordinates
-    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
-                landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
-              landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
-    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
-              landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
-
-    angle = calculate_angle(shoulder, elbow, wrist)
-    angle = abs(angle - 180)
-    if hasattr(self, 'angle_traj_widget'):
-      delta_t = time.time() - self.angle_traj_widget.time_begin
-      self.angle_traj_widget.update_values(delta_t,angle)
-
-    if angle < 30 and self.monte == True and self.descend != True:
-      self.stage = "down"
-      self.monte = False
-      self.descend = True
-    if angle > 120 and self.stage =='down' and self.descend == True and self.monte == False:
-      self.stage="up"
-      self.descend = False
-      self.monte = True
-      self.counter +=1
-
     ###
+
+    if self.has_traj:
+      # Update angle_traj_widget by updating angle and time values:
+      self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, rgb_image)
 
     mp_drawing.draw_landmarks(
       rgb_image,
       results.pose_landmarks,
       mp_pose.POSE_CONNECTIONS,
       landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-
-    ###
-
-    # Render curl counter
-    # Setup status box
-    cv2.rectangle(rgb_image, (0,0), (225,78), (0,0,255), -1)
-    cv2.line(rgb_image,pt1=(100,0), pt2=(100,78), color=(255,255,255), thickness=2)
-    cv2.line(rgb_image,pt1=(225,0), pt2=(225,78), color=(255,255,255), thickness=2)
-    cv2.line(rgb_image,pt1=(0,78), pt2=(225,78), color=(255,255,255), thickness=2)
-
-    # Rep data
-    cv2.putText(rgb_image, 'REPS', (5,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
-    cv2.putText(rgb_image, str(self.counter), (25,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
-
-    # Stage data
-    cv2.putText(rgb_image, 'STAGE', (110,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
-    cv2.putText(rgb_image, self.stage, (110,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
-
-    ###
 
     cv2.imshow('MediaPipe Pose', rgb_image)
 
@@ -231,9 +184,6 @@ class SkeletonWidget(QtWidgets.QWidget):
         z1, z2 = z1 + 400, z2 + 400
         skeleton.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
         skeleton.bone_items[i].setData(pos=skeleton.bone_item_positions[i], color=skeleton.bone_color)
-
-    if self.has_traj:
-      self.angle_traj_widget.update_plot()
 
   def get_pos(self):
     self.update_plot_data()
