@@ -34,7 +34,7 @@ class ImplantWidget(QtWidgets.QWidget):
       self.electrode_pixmap.setPos(electrode_pos[0], electrode_pos[1])
 
     # Draw stimulation intensity bar
-    self.stim_bar_height = 100
+    self.stim_bar_height = 200
     self.bar = QtWidgets.QGraphicsRectItem(0, 0, 10, self.stim_bar_height)
     self.scene.addItem(self.bar)
 
