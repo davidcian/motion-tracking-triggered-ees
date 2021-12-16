@@ -118,9 +118,9 @@ class MainWindow(QMainWindow):
     # Color image of the depth
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.05), cv2.COLORMAP_JET)
 
-    #cv2.imshow('RealSense', depth_colormap)
-    #depth_qimage = QImage(self.depth_image)
-    #self.depth_image_dock_widget.widget().setPixmap(QPixmap.fromImage(depth_qimage))
+    # TODO decide on whether to use the depth_image or the depth_colormap
+    depth_qimage = QImage(depth_colormap.data, depth_colormap.shape[1], depth_colormap.shape[0], QImage.Format_BGR888)
+    self.depth_image_dock_widget.widget().setPixmap(QPixmap.fromImage(depth_qimage))
 
     # Estimate the pose with MediaPipe
     self.raw_joint_positions, self.filtered_joint_positions, self.raw_bones, self.filtered_bones, self.results = \
