@@ -52,30 +52,22 @@ class MainWindow(QMainWindow):
 
     self.setCentralWidget(self.skeleton_widget)
 
-    self.implant_dock_widget = QDockWidget(self)
+    self.implant_dock_widget = QDockWidget('Implant', self)
     self.implant_dock_widget.setWidget(ImplantWidget())
-    self.coordinate_plot_dock_widget = QDockWidget(self)
+    self.coordinate_plot_dock_widget = QDockWidget('Coordinates', self)
     self.coordinate_plot_dock_widget.setWidget(CoordinatePlotWidget())
 
-    self.rgb_image_dock_widget = QDockWidget(self)
+    self.rgb_image_dock_widget = QDockWidget('RGB image', self)
     self.rgb_image_dock_widget.setWidget(QLabel())
 
-    self.depth_image_dock_widget = QDockWidget(self)
+    self.depth_image_dock_widget = QDockWidget('Depth image', self)
     self.depth_image_dock_widget.setWidget(QLabel())
 
     self.view_menu = self.menu_bar.addMenu('View')
-    toggle_implant_action = QAction('Implant', self)
-    toggle_implant_action.triggered.connect(self.toggle_implant_stimulation)
-    self.view_menu.addAction(toggle_implant_action)
-    toggle_coordinates_action = QAction('Coordinates', self)
-    toggle_coordinates_action.triggered.connect(self.toggle_coordinate_plots)
-    self.view_menu.addAction(toggle_coordinates_action)
-    toggle_rgb_action = QAction('RGB image', self)
-    toggle_rgb_action.triggered.connect(self.toggle_rgb_image)
-    self.view_menu.addAction(toggle_rgb_action)
-    toggle_depth_action = QAction('Depth image', self)
-    toggle_depth_action.triggered.connect(self.toggle_depth_image)
-    self.view_menu.addAction(toggle_depth_action)
+    self.view_menu.addAction(self.implant_dock_widget.toggleViewAction())
+    self.view_menu.addAction(self.coordinate_plot_dock_widget.toggleViewAction())
+    self.view_menu.addAction(self.rgb_image_dock_widget.toggleViewAction())
+    self.view_menu.addAction(self.depth_image_dock_widget.toggleViewAction())
 
     wrist, shoulder = self.get_pos()
 
@@ -152,34 +144,6 @@ class MainWindow(QMainWindow):
     self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, self.rgb_image)
 
     self.skeleton_widget.update_plot_data(self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
-
-  @Slot()
-  def toggle_implant_stimulation(self):
-    if self.implant_dock_widget.isVisible():
-      self.implant_dock_widget.hide()
-    else:
-      self.implant_dock_widget.show()
-
-  @Slot()
-  def toggle_coordinate_plots(self):
-    if self.rgb_image_dock_widget.isVisible():
-      self.coordinate_plot_widget.hide()
-    else:
-      self.coordinate_plot_dock_widget.show()
-
-  @Slot()
-  def toggle_rgb_image(self):
-    if self.rgb_image_dock_widget.isVisible():
-      self.rgb_image_dock_widget.hide()
-    else:
-      self.rgb_image_dock_widget.show()
-
-  @Slot()
-  def toggle_depth_image(self):
-    if self.depth_image_dock_widget.isVisible():
-      self.depth_image_dock_widget.hide()
-    else:
-      self.depth_image_dock_widget.show()
 
   def get_pos(self):
     rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()
