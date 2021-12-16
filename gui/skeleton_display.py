@@ -1,6 +1,4 @@
 from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QPushButton, QComboBox
 from PySide6.QtGui import QVector3D
 import pyqtgraph.opengl as gl
 
@@ -58,7 +56,7 @@ class SkeletonWidget(QtWidgets.QWidget):
 
     self.layout.addWidget(w)
 
-  def update_plot_data(self, rgb_image, raw_joint_positions, raw_bones, filtered_joint_positions, filtered_bones):
+  def update_plot_data(self, raw_joint_positions, raw_bones, filtered_joint_positions, filtered_bones):
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
 

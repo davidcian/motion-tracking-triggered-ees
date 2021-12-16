@@ -7,7 +7,7 @@ import csv
 import time
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtWidgets import QPushButton, QComboBox, QMainWindow, QMenu
+from PySide6.QtWidgets import QPushButton, QComboBox, QMainWindow, QMenu, QDockWidget
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QAction
 import pyqtgraph as pg
@@ -53,7 +53,8 @@ class MainWindow(QMainWindow):
     self.setCentralWidget(self.skeleton_widget)
 
     self.implant_widget = ImplantWidget()
-    self.coordinate_plot_widget = CoordinatePlotWidget()
+    self.coordinate_plot_widget = QDockWidget(self)
+    self.coordinate_plot_widget.setWidget(CoordinatePlotWidget())
 
     self.view_menu = self.menu_bar.addMenu('View')
     view_implant_action = QAction('Implant', self)
@@ -136,7 +137,7 @@ class MainWindow(QMainWindow):
       # Update angle_traj_widget by updating angle and time values:
       self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, self.rgb_image)
 
-    self.skeleton_widget.update_plot_data(self.rgb_image, self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
+    self.skeleton_widget.update_plot_data(self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
 
   @Slot()
   def show_implant_stimulation(self):
@@ -158,7 +159,7 @@ class MainWindow(QMainWindow):
 
     return wrist, shoulder
 
-  def set_trajectory(self,angle_traj, time_traj):
+  def set_trajectory(self, angle_traj, time_traj):
     self.has_traj = True
     self.angle_traj_widget = AngleTraj(angle_traj, time_traj)
     self.angle_traj_widget.setWindowTitle('Trajectory window')
