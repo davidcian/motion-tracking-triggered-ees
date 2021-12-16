@@ -6,20 +6,12 @@ import pyqtgraph.opengl as gl
 
 import mediapipe as mp
 import numpy as np
-import cv2
-
-import time
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
 from video_tracking.rt_pose_estimation import estimate_pose, bone_list, landmarks_list
-
-from coordinate_display import CoordinatePlotWidget
-from implant_display import ImplantWidget
-
-from opensim_tools import calculate_angle, AngleTraj, path_planning
 
 class Skeleton():
   def __init__(self, joint_color, bone_color):
@@ -36,27 +28,12 @@ class Skeleton():
       self.bone_items.append(gl.GLLinePlotItem(pos=self.bone_item_positions[i], width=1))
 
 class SkeletonWidget(QtWidgets.QWidget):
-  def __init__(self, pose, image_data_provider):
+  def __init__(self):
     super().__init__()
-
-    self.pose = pose
-    self.image_data_provider = image_data_provider
-
-    self.depth_scale = self.image_data_provider.depth_scale
-
-    self.coordinate_plot_widget = CoordinatePlotWidget()
-
-    self.implant_widget = ImplantWidget()
-
-    self.current_frame = 0
-
-    self.frame_indices = list(range(self.current_frame))
 
     self.layout = QtWidgets.QVBoxLayout(self)
 
     self.skeletons = {'raw': Skeleton([1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0]), 'filtered': Skeleton([0, 1.0, 0, 1.0], [0, 1.0, 0, 1.0])}
-
-    ###
 
     w = gl.GLViewWidget()
 
@@ -74,8 +51,6 @@ class SkeletonWidget(QtWidgets.QWidget):
 
     w.addItem(self.sp2)
 
-    ###
-
     # Draw bones
     for skeleton in self.skeletons.values():
       for bone_item in skeleton.bone_items:
@@ -83,72 +58,9 @@ class SkeletonWidget(QtWidgets.QWidget):
 
     self.layout.addWidget(w)
 
-    self.timer = QtCore.QTimer(self)
-    self.connect(self.timer, QtCore.SIGNAL("timeout()"), lambda: self.update_plot_data())
-    update_interval = 100
-    self.timer.start(update_interval)
-
-    show_coordinate_plot_button = QPushButton("Show coordinate plots")
-    show_coordinate_plot_button.clicked.connect(self.show_coordinate_plots)
-    self.layout.addWidget(show_coordinate_plot_button)
-
-    show_implant_widget_button = QPushButton("Show implant stimulation")
-    show_implant_widget_button.clicked.connect(self.show_implant_stimulation)
-    self.layout.addWidget(show_implant_widget_button)
-
-    self.has_traj = False
-
-  @Slot()
-  def show_implant_stimulation(self):
-    self.implant_widget.show()
-
-  @Slot()
-  def show_coordinate_plots(self):
-    self.coordinate_plot_widget.show()
-
-  def update_plot_data(self):
-    rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()
-
-    # Color image of the depth
-    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
-
-    cv2.imshow('RealSense', depth_colormap)
-
-    # Estimate the pose with MediaPipe
-    raw_joint_positions, filtered_joint_positions, raw_bones, filtered_bones, results = estimate_pose(self.pose, rgb_image, depth_image, self.depth_scale)
-    self.results = results
+  def update_plot_data(self, rgb_image, raw_joint_positions, raw_bones, filtered_joint_positions, filtered_bones):
     self.skeletons['raw'].joint_positions, self.skeletons['raw'].bones = raw_joint_positions, raw_bones
     self.skeletons['filtered'].joint_positions, self.skeletons['filtered'].bones = filtered_joint_positions, filtered_bones
-
-    ###
-
-    if self.has_traj:
-      # Update angle_traj_widget by updating angle and time values:
-      self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, rgb_image)
-
-    mp_drawing.draw_landmarks(
-      rgb_image,
-      results.pose_landmarks,
-      mp_pose.POSE_CONNECTIONS,
-      landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-
-    cv2.imshow('MediaPipe Pose', rgb_image)
-
-    self.current_frame += 1
-
-    #self.frame_indices = self.frame_indices[1:]
-    #self.frame_indices.append(self.frame_indices[-1] + 1)
-    self.frame_indices.append(self.current_frame)
-
-    selected_joint = self.coordinate_plot_widget.selected_joint
-
-    x, y, z = raw_joint_positions[selected_joint]
-    filtered_x, filtered_y, filtered_z = filtered_joint_positions[selected_joint]
-
-    features_update = {'x_val': x, 'y_val': y, 'z_val': z, 'filtered_z_val': filtered_z}
-    self.coordinate_plot_widget.update(self.frame_indices, features_update)
-
-    ###
 
     skeletons_pos = []
     skeletons_color = []
@@ -184,23 +96,3 @@ class SkeletonWidget(QtWidgets.QWidget):
         z1, z2 = z1 + 400, z2 + 400
         skeleton.bone_item_positions[i] = np.array([[x1, y1, z1], [x2, y2, z2]])
         skeleton.bone_items[i].setData(pos=skeleton.bone_item_positions[i], color=skeleton.bone_color)
-
-  def get_pos(self):
-    self.update_plot_data()
-
-    landmarks = self.results.pose_world_landmarks.landmark
-
-    # Get coordinates
-    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-    # elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
-    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
-
-    return wrist, shoulder
-
-  def set_trajectory(self,angle_traj, time_traj):
-    self.has_traj = True
-    self.angle_traj_widget = AngleTraj(angle_traj, time_traj)
-    self.angle_traj_widget.setWindowTitle('Trajectory window')
-    self.angle_traj_widget.time_begin = time.time()
-    self.angle_traj_widget.resize(800, 400)
-    self.angle_traj_widget.show()
