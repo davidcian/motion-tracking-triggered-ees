@@ -64,15 +64,18 @@ class MainWindow(QMainWindow):
     self.depth_image_dock_widget.setWidget(QLabel())
 
     self.view_menu = self.menu_bar.addMenu('View')
-    view_implant_action = QAction('Implant', self)
-    view_implant_action.triggered.connect(self.show_implant_stimulation)
-    self.view_menu.addAction(view_implant_action)
-    view_coordinates_action = QAction('Coordinates', self)
-    view_coordinates_action.triggered.connect(self.show_coordinate_plots)
-    self.view_menu.addAction(view_coordinates_action)
-    view_rgb_action = QAction('RGB image', self)
-    view_rgb_action.triggered.connect(self.toggle_rgb_image)
-    self.view_menu.addAction(view_rgb_action)
+    toggle_implant_action = QAction('Implant', self)
+    toggle_implant_action.triggered.connect(self.toggle_implant_stimulation)
+    self.view_menu.addAction(toggle_implant_action)
+    toggle_coordinates_action = QAction('Coordinates', self)
+    toggle_coordinates_action.triggered.connect(self.toggle_coordinate_plots)
+    self.view_menu.addAction(toggle_coordinates_action)
+    toggle_rgb_action = QAction('RGB image', self)
+    toggle_rgb_action.triggered.connect(self.toggle_rgb_image)
+    self.view_menu.addAction(toggle_rgb_action)
+    toggle_depth_action = QAction('Depth image', self)
+    toggle_depth_action.triggered.connect(self.toggle_depth_image)
+    self.view_menu.addAction(toggle_depth_action)
 
     wrist, shoulder = self.get_pos()
 
@@ -153,12 +156,18 @@ class MainWindow(QMainWindow):
     self.skeleton_widget.update_plot_data(self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
 
   @Slot()
-  def show_implant_stimulation(self):
-    self.implant_widget.show()
+  def toggle_implant_stimulation(self):
+    if self.implant_dock_widget.isVisible():
+      self.implant_dock_widget.hide()
+    else:
+      self.implant_dock_widget.show()
 
   @Slot()
-  def show_coordinate_plots(self):
-    self.coordinate_plot_widget.show()
+  def toggle_coordinate_plots(self):
+    if self.rgb_image_dock_widget.isVisible():
+      self.coordinate_plot_widget.hide()
+    else:
+      self.coordinate_plot_dock_widget.show()
 
   @Slot()
   def toggle_rgb_image(self):
@@ -166,6 +175,13 @@ class MainWindow(QMainWindow):
       self.rgb_image_dock_widget.hide()
     else:
       self.rgb_image_dock_widget.show()
+
+  @Slot()
+  def toggle_depth_image(self):
+    if self.depth_image_dock_widget.isVisible():
+      self.depth_image_dock_widget.hide()
+    else:
+      self.depth_image_dock_widget.show()
 
   def get_pos(self):
     rgb_image, depth_image = self.image_data_provider.retrieve_rgb_depth_image()
