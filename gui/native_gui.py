@@ -7,9 +7,9 @@ import csv
 import time
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtWidgets import QPushButton, QComboBox, QMainWindow, QMenu, QDockWidget
+from PySide6.QtWidgets import QPushButton, QComboBox, QMainWindow, QMenu, QDockWidget, QLabel
 from PySide6.QtCore import Slot
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QImage, QPixmap
 import pyqtgraph as pg
 
 import numpy as np
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
   def __init__(self, pose, image_data_provider):
     super().__init__()
 
-    self.setGeometry(100, 100, 500, 500)
+    self.setGeometry(100, 100, 800, 800)
 
     self.pose = pose
     self.image_data_provider = image_data_provider
@@ -56,6 +56,12 @@ class MainWindow(QMainWindow):
     self.implant_dock_widget.setWidget(ImplantWidget())
     self.coordinate_plot_dock_widget = QDockWidget(self)
     self.coordinate_plot_dock_widget.setWidget(CoordinatePlotWidget())
+
+    self.rgb_image_dock_widget = QDockWidget(self)
+    self.rgb_image_dock_widget.setWidget(QLabel())
+
+    self.depth_image_dock_widget = QDockWidget(self)
+    self.depth_image_dock_widget.setWidget(QLabel())
 
     self.view_menu = self.menu_bar.addMenu('View')
     view_implant_action = QAction('Implant', self)
@@ -112,7 +118,9 @@ class MainWindow(QMainWindow):
     # Color image of the depth
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.05), cv2.COLORMAP_JET)
 
-    cv2.imshow('RealSense', depth_colormap)
+    #cv2.imshow('RealSense', depth_colormap)
+    #depth_qimage = QImage(self.depth_image)
+    #self.depth_image_dock_widget.widget().setPixmap(QPixmap.fromImage(depth_qimage))
 
     # Estimate the pose with MediaPipe
     self.raw_joint_positions, self.filtered_joint_positions, self.raw_bones, self.filtered_bones, self.results = \
@@ -124,7 +132,8 @@ class MainWindow(QMainWindow):
       mp_pose.POSE_CONNECTIONS,
       landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
 
-    cv2.imshow('MediaPipe Pose', self.rgb_image)
+    rgb_qimage = QImage(self.rgb_image, self.rgb_image.shape[1], self.rgb_image.shape[0], QImage.Format_BGR888)
+    self.rgb_image_dock_widget.widget().setPixmap(QPixmap.fromImage(rgb_qimage))
 
     x, y, z = self.raw_joint_positions[self.coordinate_plot_dock_widget.widget().selected_joint]
     filtered_x, filtered_y, filtered_z = self.filtered_joint_positions[self.coordinate_plot_dock_widget.widget().selected_joint]
