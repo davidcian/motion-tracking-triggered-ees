@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
   def __init__(self, pose, image_data_provider):
     super().__init__()
 
-    self.setGeometry(100, 100, 800, 800)
+    self.setGeometry(100, 100, 1000, 800)
 
     self.pose = pose
     self.image_data_provider = image_data_provider
@@ -101,8 +101,6 @@ class MainWindow(QMainWindow):
     update_interval = 100
     self.timer.start(update_interval)
 
-    self.has_traj = False
-
     self.features_update = None
     self.results = None
     self.rgb_image = None
@@ -147,11 +145,11 @@ class MainWindow(QMainWindow):
     self.features_update = {'x_val': x, 'y_val': y, 'z_val': z, 'filtered_z_val': filtered_z}
   
   def update_view(self):
+    #print("Updating view, has traj?", self.has_traj)
     self.coordinate_plot_dock_widget.widget().update(self.frame_indices, self.features_update)
 
-    if self.has_traj:
-      # Update angle_traj_widget by updating angle and time values:
-      self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, self.rgb_image)
+    # Update angle_traj_widget by updating angle and time values:
+    self.angle_traj_widget.update_plot(self.results.pose_world_landmarks.landmark, self.rgb_image)
 
     self.skeleton_widget.update_plot_data(self.raw_joint_positions, self.raw_bones, self.filtered_joint_positions, self.filtered_bones)
 
@@ -196,7 +194,6 @@ class MainWindow(QMainWindow):
     return wrist, shoulder
 
   def set_trajectory(self, angle_traj, time_traj):
-    self.has_traj = True
     self.angle_traj_widget = AngleTraj(angle_traj, time_traj)
     self.angle_traj_widget.setWindowTitle('Trajectory window')
     self.angle_traj_widget.time_begin = time.time()

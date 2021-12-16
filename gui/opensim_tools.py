@@ -261,9 +261,9 @@ class AngleTraj(QtWidgets.QWidget):
     # Render curl counter
     # Setup status box
     cv2.rectangle(rgb_image, (0,0), (225,78), (0,0,255), -1)
-    cv2.line(rgb_image,pt1=(100,0), pt2=(100,78), color=(255,255,255), thickness=2)
-    cv2.line(rgb_image,pt1=(225,0), pt2=(225,78), color=(255,255,255), thickness=2)
-    cv2.line(rgb_image,pt1=(0,78), pt2=(225,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image, pt1=(100,0), pt2=(100,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image, pt1=(225,0), pt2=(225,78), color=(255,255,255), thickness=2)
+    cv2.line(rgb_image, pt1=(0,78), pt2=(225,78), color=(255,255,255), thickness=2)
 
     # Rep data
     cv2.putText(rgb_image, 'REPS', (5,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
@@ -272,6 +272,8 @@ class AngleTraj(QtWidgets.QWidget):
     # Stage data
     cv2.putText(rgb_image, 'STAGE', (110,31), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
     cv2.putText(rgb_image, self.stage, (110,65), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
+
+    cv2.imshow('Reps viz', rgb_image)
 
   def set_trajectory(self, angle_traj, time_traj):
     self.angle_traj = angle_traj
