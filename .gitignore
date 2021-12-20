@@ -140,3 +140,4 @@ dmypy.json
 # Non-important files
 .DS_Store
 .idea/*
+EMG_analysis/data/
