@@ -169,29 +169,77 @@ end
 %     plot(MVC_EMG.Time{1,i}, MVC_EMG.movRMS{1,i})
 %     plot(MVC_EMG.Time{1,i}, MVC_EMG.movRMS{1,i} - muscle_baseline(i))
 % end
-config_nb = 1;
+config_idx = 3;
 
 % Plot percentages of activation
-for i=1:length(activation(config_nb).Data(1,:))
+for i=1:length(activation(config_idx).Data(1,:))
     figure;
     subplot(2,1,1)
-    bar(categorical(activation(config_nb).Channels), ...
-        activation(config_nb).Data(:,i))
+    %     bar(categorical(activation(config_idx).Channels), ...
+    %         activation(config_idx).Data(:,i))
+    %     ylim([0 100])
+    %     ylabel('Percentage of activation')
+    %     title('Percentage of activation - STIM ', num2str(i))
+    %     subplot(2,1,2)
+    bar(categorical(activation2(config_idx).Channels), ...
+        activation2(config_idx).Data(:,i))
+    bar(categorical(activation2(config_idx).Channels), ...
+        activation2(config_idx).Data(:,i))
     ylim([0 100])
-    ylabel('Percentage of activation')
-    title('Percentage of activation - STIM ', num2str(i))
-    subplot(2,1,2)
-    bar(categorical(activation2(config_nb).Channels), ...
-        activation2(config_nb).Data(:,i))
-    ylim([0 100])
-    ylabel('Percentage of activation')
-    title('Percentage of activation - STIM ', num2str(i))
+    ylabel('Percentage of activation [%]', 'FontSize', 15)
+    title('Percentage of activation - STIM ', num2str(i), 'FontSize', 15)
 end
 
 % Verif
 % for i=1:nb_EMG
-%     figure; hold on
-%     plot(configs_EMG(config_nb).Time{1,i}, configs_EMG(config_nb).DataRect{1,i})
-%     plot(configs_EMG(config_nb).Time{1,i}, configs_EMG(config_nb).movRMS{1,i})
-%     title(configs_EMG(config_nb).Channels(i))
+%     figure; hold on;
+% 
+%     subplot(2,1,1)
+%     bar(activation(config_idx).Data(i,:))
+%     ylim([0 100])
+%     ylabel('Percentage of activation')
+%     title('Percentage of activation - STIM ', num2str(i))
+% 
+%     subplot(2,1,2)
+%     plot(configs_EMG(config_idx).Time{1,i}, ...
+%         configs_EMG(config_idx).DataRect{1,i})
+%     plot(configs_EMG(config_idx).Time{1,i}, ...
+%         configs_EMG(config_idx).movRMS{1,i})
+%     title(configs_EMG(config_idx).Channels(i))
 % end
+
+config_idx = 6;
+% for i=1:length(activation(config_idx).Data(1,:))
+%     figure;
+%     subplot(2,1,1)
+%     bar(categorical(activation(config_idx).Channels), ...
+%         activation(config_idx).Data(:,i))
+%     ylim([0 100])
+%     ylabel('Percentage of activation')
+%     title('Percentage of activation - STIM ', num2str(i))
+%     subplot(2,1,2)
+%     bar(categorical(activation2(config_idx).Channels), ...
+%         activation2(config_idx).Data(:,i))
+%     ylim([0 100])
+%     ylabel('Percentage of activation')
+%     title('Percentage of activation - STIM ', num2str(i))
+% end
+
+
+% Verif
+for i=1:nb_EMG
+    figure; hold on
+    subplot(2,1,1)
+    hold on; box on;
+    plot(configs_EMG(config_idx).Time{1,i}, configs_EMG(config_idx).Data{1,i})
+    xlabel('Time [s]')
+    ylabel('Muscle activity [V]')
+    title(configs_EMG(config_idx).Channels(i) + " - raw")
+    subplot(2,1,2)
+    hold on; box on;
+    plot(configs_EMG(config_idx).Time{1,i}, configs_EMG(config_idx).DataRect{1,i})
+    plot(configs_EMG(config_idx).Time{1,i}, configs_EMG(config_idx).movRMS{1,i})
+    xlabel('Time [s]')
+    ylabel('Muscle activity [V]')
+    title(configs_EMG(config_idx).Channels(i) + " - preprocessed and normalized")
+end
