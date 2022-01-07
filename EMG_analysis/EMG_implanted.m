@@ -384,14 +384,14 @@ config_idx = 4;
 %     title('Percentage of activation - STIM ', num2str(i))
 % end
 
-% for i=1:length(activation_day3(config_idx).Data(1,:))
-%     figure;
-%     bar(categorical(activation_day3(config_idx).Channels(1:nb_EMG_day3)), ...
-%         activation_day3(config_idx).Data(:,i))
-%     ylim([0 100])
-%     ylabel('Percentage of activation')
-%     title('Percentage of activation - STIM ', num2str(i))
-% end
+for i=1:length(activation_day3(config_idx).Data(1,:))
+    figure;
+    bar(categorical(activation_day3(config_idx).Channels(1:nb_EMG_day3)), ...
+        activation_day3(config_idx).Data(:,i))
+    ylim([0 100])
+    ylabel('Percentage of activation')
+    title('Percentage of activation - STIM ', num2str(i))
+end
 
 % for i=1:nb_EMG_day1
 %     figure;

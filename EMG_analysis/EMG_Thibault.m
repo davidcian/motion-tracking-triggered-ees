@@ -174,15 +174,13 @@ config_idx = 3;
 % Plot percentages of activation
 for i=1:length(activation(config_idx).Data(1,:))
     figure;
-    subplot(2,1,1)
+%     subplot(2,1,1)
     %     bar(categorical(activation(config_idx).Channels), ...
     %         activation(config_idx).Data(:,i))
     %     ylim([0 100])
     %     ylabel('Percentage of activation')
     %     title('Percentage of activation - STIM ', num2str(i))
     %     subplot(2,1,2)
-    bar(categorical(activation2(config_idx).Channels), ...
-        activation2(config_idx).Data(:,i))
     bar(categorical(activation2(config_idx).Channels), ...
         activation2(config_idx).Data(:,i))
     ylim([0 100])
